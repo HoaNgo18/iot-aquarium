@@ -63,10 +63,42 @@ class AlertRuleTests(unittest.TestCase):
         self.send_telemetry(1, 0, ph=5)
         self.send_telemetry(2, 60, ph=None, sensor_status="error")
         self.assertIsNotNone(self.active_alert("ph"))
-        self.assertIsNotNone(self.active_alert("sensor_error"))
+        self.assertIsNotNone(self.active_alert("sensor_error_ph"))
         self.send_telemetry(3, 120)
         self.assertIsNone(self.active_alert("ph"))
+        self.assertIsNone(self.active_alert("sensor_error_ph"))
+
+    def test_independent_probe_recovery_and_delayed_samples(self):
+        self.send_telemetry(1, 0, temperature_c=None, ph=None, turbidity_pct=None, sensor_status="error")
+        for key in ("temperature", "ph", "clarity"):
+            self.assertIsNotNone(self.active_alert(f"sensor_error_{key}"))
+        self.send_telemetry(2, 60, temperature_c=None, ph=None, turbidity_pct=None,
+                            turbidity_mv=244.9, turbidity_reference_mv=294, sensor_status="error")
+        self.assertIsNone(self.active_alert("sensor_error_clarity"))
+        ph_error = self.active_alert("sensor_error_ph")
+        self.send_telemetry(3, 120, ph=None, turbidity_pct=None,
+                            turbidity_mv=244.9, turbidity_reference_mv=294, sensor_status="error")
+        self.assertIsNone(self.active_alert("sensor_error_temperature"))
+        self.assertEqual(self.active_alert("sensor_error_ph").id, ph_error.id)
+        self.assertEqual(self.active_alert("sensor_error_ph").started_at, ph_error.started_at)
+        self.send_telemetry(4, 180, turbidity_pct=None, turbidity_mv=244.9,
+                            turbidity_reference_mv=294, sensor_status="error")
+        self.assertIsNone(self.active_alert("sensor_error_ph"))
+        self.send_telemetry(5, 150, ph=None, sensor_status="error")
+        self.assertIsNone(self.active_alert("sensor_error_ph"))
+
+    def test_old_aggregate_is_retired_not_left_counting(self):
+        self.send_telemetry(1, 0)
+        with self.sessions() as session:
+            session.add(Alert(device_id=self.device_id, alert_type="sensor_error", severity="critical",
+                              message="Không có số đo hợp lệ: nhiệt độ, pH, độ đục", started_at=self.base_time))
+            session.commit()
+        self.send_telemetry(2, 60, temperature_c=None, ph=None, turbidity_pct=None,
+                            turbidity_mv=244.9, turbidity_reference_mv=294, sensor_status="error")
         self.assertIsNone(self.active_alert("sensor_error"))
+        self.assertIsNotNone(self.active_alert("sensor_error_temperature"))
+        self.assertIsNotNone(self.active_alert("sensor_error_ph"))
+        self.assertIsNone(self.active_alert("sensor_error_clarity"))
 
     def test_prolonged_violation_does_not_duplicate_open_alert(self):
         self.send_telemetry(1, 0, turbidity_pct=65)

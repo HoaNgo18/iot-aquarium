@@ -30,9 +30,18 @@ class PureAlertRuleTests(unittest.TestCase):
     def test_failed_probe_does_not_invent_a_normal_value(self):
         decisions = self.evaluate(ph=None, sensor_status="error", temperature_c=34)
         self.assertNotIn("ph", decisions)
-        self.assertTrue(decisions["sensor_error"].active)
+        self.assertTrue(decisions["sensor_error_ph"].active)
         self.assertTrue(decisions["temperature"].active)
-        self.assertIn("pH", decisions["sensor_error"].message)
+        self.assertIn("pH", decisions["sensor_error_ph"].message)
+        self.assertFalse(decisions["sensor_error_temperature"].active)
+
+    def test_raw_clarity_is_valid_without_legacy_percent(self):
+        decisions = self.evaluate(turbidity_pct=None, turbidity_mv=244.9,
+                                  turbidity_reference_mv=294, sensor_status="error")
+        self.assertFalse(any(d.active for d in decisions.values()))
+        decisions = self.evaluate(turbidity_pct=None, turbidity_mv=None,
+                                  turbidity_reference_mv=294, sensor_status="error")
+        self.assertTrue(decisions["sensor_error_clarity"].active)
 
     def test_telemetry_is_evidence_device_is_online(self):
         self.assertFalse(self.evaluate()["offline"].active)

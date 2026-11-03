@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import JSON, CheckConstraint, DateTime, Float, ForeignKey, Index, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -50,11 +50,57 @@ class Telemetry(Base):
     )
     temperature_c: Mapped[float | None] = mapped_column(Float)
     ph: Mapped[float | None] = mapped_column(Float)
+    ph_mv: Mapped[float | None] = mapped_column(Float)
     turbidity_pct: Mapped[float | None] = mapped_column(Float)
+    turbidity_mv: Mapped[float | None] = mapped_column(Float)
+    turbidity_reference_mv: Mapped[float | None] = mapped_column(Float)
+    clarity_mv: Mapped[float | None] = mapped_column(Float)
+    clarity_pct: Mapped[float | None] = mapped_column(Float)
+    clarity_state: Mapped[str | None] = mapped_column(String(16))
+    clarity_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    clarity_baseline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     signal_strength_dbm: Mapped[int] = mapped_column(Integer, nullable=False)
     sensor_status: Mapped[str] = mapped_column(String(16), nullable=False)
+    settings_revision: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
 
     device: Mapped[Device] = relationship(back_populates="telemetry")
+
+
+class ClarityBaseline(Base):
+    __tablename__ = "clarity_baselines"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    device_id: Mapped[str] = mapped_column(ForeignKey("devices.id"), index=True)
+    reference_mv: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    water_changed: Mapped[bool] = mapped_column(default=False)
+
+
+class DeviceSettings(Base):
+    __tablename__ = "device_settings"
+    device_id: Mapped[str] = mapped_column(ForeignKey("devices.id"), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    clarity_revision: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    values: Mapped[dict] = mapped_column(JSON, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SettingsChange(Base):
+    __tablename__ = "settings_changes"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    device_id: Mapped[str] = mapped_column(ForeignKey("devices.id"), index=True)
+    action: Mapped[str] = mapped_column(String(16), nullable=False)
+    before: Mapped[dict] = mapped_column(JSON, nullable=False)
+    after: Mapped[dict] = mapped_column(JSON, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    baseline_id: Mapped[int | None] = mapped_column(ForeignKey("clarity_baselines.id"), unique=True)
+
+
+class SensorHealthState(Base):
+    __tablename__ = "sensor_health_states"
+    device_id: Mapped[str] = mapped_column(ForeignKey("devices.id"), primary_key=True)
+    sensor: Mapped[str] = mapped_column(String(16), primary_key=True)
+    last_sample_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    missing_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Threshold(Base):

@@ -24,10 +24,15 @@ def add_telemetry(session: Session, payload: TelemetryPayload) -> Telemetry:
         measured_at=payload.timestamp,
         temperature_c=payload.temperature_c,
         ph=payload.ph,
+        ph_mv=payload.ph_mv,
         turbidity_pct=payload.turbidity_pct,
+        turbidity_mv=payload.turbidity_mv,
+        turbidity_reference_mv=payload.turbidity_reference_mv,
         signal_strength_dbm=payload.signal_strength_dbm,
         sensor_status=payload.sensor_status,
     )
+    from app.services.clarity import process
+    process(session, row)
     session.add(row)
     return row
 

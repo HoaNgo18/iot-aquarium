@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
+from app.domain.sensor_health import health_for
 
 
 DeviceId = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")]
@@ -16,12 +17,19 @@ class TelemetryPayload(BaseModel):
     sequence: Annotated[int, Field(ge=1)]
     temperature_c: Annotated[float | None, Field(ge=-55, le=125)]
     ph: Annotated[float | None, Field(ge=0, le=14)]
+    ph_mv: Annotated[float | None, Field(ge=150, le=3000)] = None
     turbidity_pct: Annotated[float | None, Field(ge=0, le=100)]
+    turbidity_mv: Annotated[float | None, Field(ge=150, le=3000)] = None
+    turbidity_reference_mv: Annotated[float | None, Field(ge=150, le=3000)] = None
     signal_strength_dbm: Annotated[int, Field(ge=-127, le=0)]
     sensor_status: Literal["normal", "error"]
 
     @model_validator(mode="after")
     def validate_sensor_values(self) -> "TelemetryPayload":
+        if self.ph_mv is not None or self.turbidity_mv is not None or self.turbidity_reference_mv is not None:
+            # Old firmware marks a raw-mV probe as error because its legacy % is null.
+            self.sensor_status = "normal" if all(health_for(self).values()) else "error"
+            return self
         missing = any(value is None for value in (self.temperature_c, self.ph, self.turbidity_pct))
         if (self.sensor_status == "error") != missing:
             raise ValueError("sensor_status=error khi và chỉ khi ít nhất một số đo là null")
@@ -58,9 +66,22 @@ class TelemetryResponse(UTCResponse):
     received_at: datetime
     temperature_c: float | None
     ph: float | None
+    ph_mv: float | None = None
     turbidity_pct: float | None
+    turbidity_mv: float | None = None
+    turbidity_reference_mv: float | None = None
+    clarity_mv: float | None = None
+    clarity_pct: float | None = None
+    clarity_state: str | None = None
+    clarity_since: datetime | None = None
+    clarity_baseline_at: datetime | None = None
     signal_strength_dbm: int
     sensor_status: str
+
+    @computed_field
+    @property
+    def sensor_health(self) -> dict[str, bool]:
+        return health_for(self)
 
 
 class DeviceResponse(UTCResponse):
@@ -85,6 +106,14 @@ class AlertResponse(UTCResponse):
     started_at: datetime
     ended_at: datetime | None
     acknowledged_at: datetime | None
+
+    @field_validator("message")
+    @classmethod
+    def use_clarity_term(cls, value):
+        # Translate historical wording without rewriting the audit records.
+        if "Chỉ số độ đục" in value:
+            return "Độ trong: cảnh báo theo chỉ số cũ, chưa quy đổi theo mốc nước sạch."
+        return value.replace("độ đục", "độ trong").replace("Độ đục", "Độ trong")
 
 
 class ThresholdUpdate(BaseModel):

@@ -62,6 +62,23 @@ class IngestTests(unittest.TestCase):
         self.assertEqual(result, IngestResult.DUPLICATE)
         self.assertEqual(count, 1)
 
+    def test_stores_uncalibrated_voltage_without_turbidity_alarm(self):
+        from app.schemas import TelemetryResponse
+        payload = json.loads(self.telemetry())
+        payload.update(turbidity_pct=None, turbidity_mv=291,
+                       turbidity_reference_mv=294, sensor_status="error")
+        result = ingest_message("aquarium-monitoring/devices/node-test/telemetry",
+                                json.dumps(payload).encode(), self.sessions)
+        self.assertEqual(result, IngestResult.STORED)
+        with self.sessions() as session:
+            row = session.scalar(select(Telemetry))
+            response = TelemetryResponse.model_validate(row)
+            self.assertEqual(response.turbidity_mv, 291)
+            self.assertEqual(response.turbidity_reference_mv, 294)
+            self.assertIsNone(response.turbidity_pct)
+            alerts = list(session.scalars(select(Alert)))
+            self.assertNotIn("turbidity", [a.alert_type for a in alerts])
+
     def test_rejects_device_id_mismatch(self) -> None:
         with self.assertRaises(ValueError):
             ingest_message(

@@ -10,6 +10,8 @@ from app.models import Alert, Threshold
 from app.repositories.alerts import get_or_create_threshold, list_alerts
 from app.repositories.devices import get_device
 from app.schemas import AlertResponse, ThresholdResponse, ThresholdUpdate
+from app.services.device_settings import effective_settings, save_settings
+from app.settings_schema import SettingsValues
 
 
 router = APIRouter(prefix="/api/v1/devices", tags=["alerts"])
@@ -57,6 +59,10 @@ def update_thresholds(
 ) -> Threshold:
     if get_device(db, device_id) is None:
         raise HTTPException(status_code=404, detail="Không tìm thấy thiết bị")
+    settings, _ = effective_settings(db, device_id)
+    save_settings(db, device_id, SettingsValues(**{**settings.model_dump(), **{
+        key: getattr(update, key) for key in ("temperature_min_c", "temperature_max_c", "ph_min", "ph_max")},
+        "temperature_preset": "custom"}))
     threshold = get_or_create_threshold(db, device_id)
     for field, value in update.model_dump().items():
         setattr(threshold, field, value)

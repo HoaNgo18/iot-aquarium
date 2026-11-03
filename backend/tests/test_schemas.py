@@ -19,6 +19,31 @@ VALID_PAYLOAD = {
 
 
 class TelemetryPayloadTests(unittest.TestCase):
+    def test_ph_voltage_is_signal_not_calibrated_ph(self):
+        from app.domain.sensor_health import health_for
+        payload = TelemetryPayload.model_validate({**VALID_PAYLOAD, "ph": None,
+                                                  "ph_mv": 1275, "sensor_status": "error"})
+        self.assertIsNone(payload.ph)
+        self.assertTrue(health_for(payload)['ph'])
+        self.assertEqual(payload.sensor_status, 'normal')
+        for value in (0, 149, 3001, float('nan'), float('inf')):
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                TelemetryPayload.model_validate({**VALID_PAYLOAD, "ph_mv": value})
+
+    def test_raw_voltage_does_not_imply_calibrated_turbidity(self):
+        payload = TelemetryPayload.model_validate({**VALID_PAYLOAD,
+            "turbidity_pct": None, "sensor_status": "error",
+            "turbidity_mv": 291, "turbidity_reference_mv": 294})
+        self.assertIsNone(payload.turbidity_pct)
+        self.assertEqual(payload.turbidity_mv, 291)
+        self.assertEqual(payload.sensor_status, 'normal')
+        normal = TelemetryPayload.model_validate({**VALID_PAYLOAD, 'turbidity_pct': None,
+                                                 'turbidity_mv': 291, 'turbidity_reference_mv': 294})
+        self.assertEqual(normal.sensor_status, 'normal')
+        for value in (142, 3001, float("nan"), float("inf")):
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                TelemetryPayload.model_validate({**VALID_PAYLOAD, "turbidity_mv": value})
+
     def test_accepts_valid_payload(self):
         self.assertEqual(TelemetryPayload.model_validate(VALID_PAYLOAD).ph, 7.2)
 

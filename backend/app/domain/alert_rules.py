@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from app.domain.sensor_health import sensor_health, SENSOR_LABELS
 
 
 @dataclass(frozen=True)
@@ -30,17 +31,16 @@ def evaluate_telemetry(
     turbidity_pct: float | None,
     sensor_status: str,
     thresholds: ThresholdValues,
+    turbidity_mv: float | None = None,
+    turbidity_reference_mv: float | None = None,
 ) -> list[AlertDecision]:
-    missing = [
-        label for label, value in (
-            ("nhiệt độ", temperature_c), ("pH", ph), ("độ đục", turbidity_pct)
-        ) if value is None
-    ]
+    health = sensor_health(temperature_c=temperature_c, ph=ph, turbidity_pct=turbidity_pct,
+                           turbidity_mv=turbidity_mv, turbidity_reference_mv=turbidity_reference_mv)
     decisions = [
-        AlertDecision(
-            "sensor_error", sensor_status == "error", "critical",
-            "Không có số đo hợp lệ: " + ", ".join(missing) if missing else "Cảm biến hoạt động bình thường.",
-        ),
+        *[AlertDecision(f"sensor_error_{key}", not healthy, "critical",
+                        f"Không có số đo hợp lệ: {SENSOR_LABELS[key]}." if not healthy
+                        else f"Cảm biến {SENSOR_LABELS[key]} hoạt động bình thường.")
+          for key, healthy in health.items()],
         *evaluate_connectivity("online"),
     ]
     # Unknown measurements must not close an existing value-based alert.
@@ -61,6 +61,6 @@ def evaluate_telemetry(
         decisions.append(AlertDecision(
             "turbidity", turbidity_pct >= thresholds.turbidity_warning_pct,
             "critical" if turbidity_pct >= thresholds.turbidity_critical_pct else "warning",
-            f"Chỉ số độ đục tương đối {turbidity_pct:.2f}%; không phải NTU.",
+            "Độ trong: chỉ số cũ vượt ngưỡng. Cần kiểm tra cảm biến.",
         ))
     return decisions
