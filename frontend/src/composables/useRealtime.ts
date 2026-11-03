@@ -111,10 +111,15 @@ export function useRealtime(deviceId: Ref<string>, sync: () => Promise<void>) {
       }
     }
     connection.onerror = () => connection.close()
-    connection.onclose = () => {
+    connection.onclose = (event) => {
       if (disposed || socket !== connection) return
       clearHeartbeat()
       socket = null
+      if (event.code === 4401) {
+        state.value = 'offline'
+        window.dispatchEvent(new Event('aquasense:unauthorized'))
+        return
+      }
       scheduleReconnect()
     }
   }
