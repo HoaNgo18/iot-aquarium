@@ -23,7 +23,7 @@ export function parseThresholds(draft: ThresholdDraft): { values: ThresholdValue
     return { values: null, error: 'pH: tối thiểu phải nhỏ hơn tối đa, trong khoảng 0 đến 14.' }
   }
   if (values.turbidity_warning_pct < 0 || values.turbidity_critical_pct > 100 || values.turbidity_warning_pct >= values.turbidity_critical_pct) {
-    return { values: null, error: 'Độ đục: ngưỡng cảnh báo phải nhỏ hơn ngưỡng nguy hiểm, trong khoảng 0 đến 100%.' }
+    return { values: null, error: 'Độ trong: cấu hình cũ chưa hợp lệ; ngưỡng thứ nhất phải nhỏ hơn ngưỡng thứ hai, trong khoảng 0 đến 100%.' }
   }
   return { values, error: '' }
 }

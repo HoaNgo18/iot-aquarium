@@ -16,9 +16,18 @@ export interface TelemetryReading {
   received_at: string
   temperature_c: number | null
   ph: number | null
+  ph_mv?: number | null
   turbidity_pct: number | null
+  turbidity_mv?: number | null
+  turbidity_reference_mv?: number | null
+  clarity_mv?: number | null
+  clarity_pct?: number | null
+  clarity_state?: 'clear' | 'slight' | 'cloudy' | null
+  clarity_since?: string | null
+  clarity_baseline_at?: string | null
   signal_strength_dbm: number
   sensor_status: 'normal' | 'error'
+  sensor_health?: { temperature: boolean; ph: boolean; clarity: boolean }
 }
 
 export interface Device {
