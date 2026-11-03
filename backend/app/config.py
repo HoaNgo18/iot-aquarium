@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     mqtt_host: str = "localhost"
     mqtt_port: int = 1884
     mqtt_client_id: str = "aquarium-monitoring-backend"
+    # Ký cookie phiên và sinh mã ghép nối. Bắt buộc đổi khi triển khai thật.
+    secret_key: str = "dev-only-change-me"
+    session_days: int = 14
+    cookie_secure: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

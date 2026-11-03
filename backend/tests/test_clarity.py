@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.database import Base, get_db
+from app.api.deps import authorize_device
 from app.main import create_app
 from app.ingest import ingest_message
 from app.models import Telemetry, Alert, ClarityBaseline
@@ -21,6 +22,7 @@ class ClarityTests(unittest.TestCase):
             with self.sessions() as session:
                 yield session
         app.dependency_overrides[get_db] = db
+        app.dependency_overrides[authorize_device] = lambda: None
         self.client = TestClient(app)
         self.client.__enter__()
         self.now = datetime.now(timezone.utc)

@@ -10,6 +10,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
+from app.api.deps import authorize_device
+from unittest import mock
 from app.ingest import ingest_message
 from app.main import create_app
 from app.realtime import build_realtime_events
@@ -30,6 +32,11 @@ class AquariumApiTests(unittest.TestCase):
                 yield session
 
         self.app.dependency_overrides[get_db] = db_override
+        # Các test này kiểm tra pipeline dữ liệu; quyền truy cập có test riêng (test_auth_tanks.py).
+        self.app.dependency_overrides[authorize_device] = lambda: None
+        patcher = mock.patch("app.api.realtime._authorized", return_value=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.client_context = TestClient(self.app)
         self.client = self.client_context.__enter__()
         self.now = datetime(2026, 10, 19, tzinfo=timezone.utc)

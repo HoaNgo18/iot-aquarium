@@ -1,3 +1,4 @@
+from unittest import mock
 import asyncio
 from datetime import datetime, timezone
 import json
@@ -45,7 +46,8 @@ class RealtimeHubTests(unittest.IsolatedAsyncioTestCase):
                 return 'ping'
 
         websocket = HeartbeatSocket()
-        await websocket_endpoint(websocket, 'node-001')  # type: ignore[arg-type]
+        with mock.patch('app.api.realtime._authorized', return_value=True):
+            await websocket_endpoint(websocket, 'node-001')  # type: ignore[arg-type]
         self.assertEqual(websocket.events[-1], {'type': 'pong'})
         await hub.broadcast({'type': 'status', 'device_id': 'node-001', 'data': {}})
         self.assertEqual(len(websocket.events), 2)
