@@ -37,6 +37,8 @@ Thumbs.db
 *.log
 data/
 .playwright-cli/
-output/playwright/
-output/firmware/
+output/
+outputs/
 
+# Tài liệu cá nhân (kế hoạch, nhật ký, ghi chép thử nghiệm) chỉ giữ local
+docs/
