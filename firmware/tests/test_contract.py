@@ -84,9 +84,11 @@ class FirmwareContractTests(unittest.TestCase):
             "fw-normal": set(), "fw-temperature-low": {"temperature"},
             "fw-temperature-high": {"temperature"}, "fw-ph-low": {"ph"},
             "fw-ph-high": {"ph"}, "fw-turbidity-high": {"turbidity"},
-            "fw-sensor-error": {"sensor_error"}, "fw-pending": {"sensor_error"},
-            "fw-invalid-values": {"sensor_error"}, "fw-status": set(),
-            "fw-calibrated": set(), "fw-nocalibration": {"sensor_error"},
+            # Same-timestamp later samples do not replace current health. The
+            # first fw-sensor-error row is healthy; individual errors cover nulls.
+            "fw-sensor-error": set(), "fw-pending": {"sensor_error_temperature", "sensor_error_ph", "sensor_error_clarity"},
+            "fw-invalid-values": {"sensor_error_temperature", "sensor_error_ph", "sensor_error_clarity"}, "fw-status": set(),
+            "fw-calibrated": set(), "fw-nocalibration": {"sensor_error_ph", "sensor_error_clarity"},
         }
         with sessions() as session:
             self.assertEqual(session.scalar(select(func.count()).select_from(Telemetry)), 67)

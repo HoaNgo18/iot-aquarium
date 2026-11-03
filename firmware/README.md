@@ -1,11 +1,15 @@
 # Firmware ESP32 — giám sát bể cá
 
+Ngày 24/10 đã nạp esp32-sensors, chỉ bật DS18B20 GPIO4, ID local tank-ds18b20-001.
+8/8 mẫu UART khớp REST; web hiển thị nhiệt độ thật. pH/độ đục vẫn null, PIR tắt.
+[Kết quả DS18B20 và giới hạn kiểm chứng](../docs/logs/ds18b20-bringup-2026-10-24.md).
+
 Firmware nền đã build được cho **ESP32 Dev Module / ESP32-WROOM thông thường** (`esp32dev`).
 Ngày 22/10 nhận diện ESP32-D0WD-V3 rev3.1, flash 4 MB, CP210x/COM3; esp32-fake đã nạp và boot thành công.
 Không dùng nguyên cấu hình này cho ESP32-C3/S3. Đã kiểm tra mạng 2.4 GHz/NTP/MQTT,
 12 mẫu khớp PostgreSQL/REST và web realtime; cảnh báo độ đục cao đã mở rồi đóng khi về normal.
 Còn kiểm tra reconnect/Last Will, chạy dài và hiện tượng UART lặp/lỗi khi mở lại COM; cảm biến thật chưa kiểm chứng.
-[Kết quả và giới hạn kiểm thử](../docs/esp32-bringup-2026-10-22.md).
+[Kết quả và giới hạn kiểm thử](../docs/logs/esp32-bringup-2026-10-22.md).
 
 ## Chế độ build
 
@@ -46,8 +50,8 @@ Phần thu thập cảm biến/PIR và phím chẩn đoán vẫn chạy khi chư
 
 Tạo `firmware/include/sensors_config.local.h` từ `sensors_config.example.h` để cấu hình đầu dò.
 DS18B20 mặc định bật trên GPIO4; pH/độ đục và PIR/LED mặc định tắt.
-pH đã chốt PH-4502C; độ đục mới có ảnh module mạch đỏ ba chân, chưa chốt mã/pinout/output.
-Xem [hướng dẫn nhận hàng và hiệu chuẩn](../docs/hardware-bringup.md) trước khi bật từng kênh.
+pH đã chốt PH-4502C; độ đục MJKDZ có ngõ analog 0–4.5 V, nhãn VCC/OUT/GND; chưa thử hai kênh analog thật.
+Xem [hướng dẫn nhận hàng và hiệu chuẩn](../docs/hardware/hardware-bringup.md) trước khi bật từng kênh.
 
 Build từ repository:
 
@@ -127,7 +131,7 @@ Test biên dịch chính mã C++ trong `lib/AquariumCore`, kiểm tra giới h�
 lọc nhiễu, offset nhiệt độ, warmup/hold PIR và vòng quay millis;
 sau đó đưa 69 JSON thật từ C++ qua schema backend và ingestion SQLite, kiểm tra chống trùng/cảnh báo.
 Không mô phỏng Wi-Fi, NTP hoặc MQTT task; các phần đó phải thử trên board.
-Xem [test plan](../docs/firmware-test-plan.md).
+Xem [test plan](../docs/hardware/firmware-test-plan.md).
 
 Tham khảo API: [ESP-MQTT 4.4](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32/api-reference/protocols/mqtt.html),
 [PlatformIO ESP32 Dev Module](https://docs.platformio.org/en/stable/boards/espressif32/esp32dev.html).

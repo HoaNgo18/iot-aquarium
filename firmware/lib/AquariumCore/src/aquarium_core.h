@@ -18,6 +18,11 @@ struct Sample {
     float temperatureC;
     float ph;
     float turbidityPct;
+    float turbidityMv;
+    float turbidityReferenceMv;
+    float phMv;
+    Sample(float t, float p, float turbidity, float mv = missing(), float reference = missing(), float phVoltage = missing())
+        : temperatureC(t), ph(p), turbidityPct(turbidity), turbidityMv(mv), turbidityReferenceMv(reference), phMv(phVoltage) {}
 };
 
 enum class Scenario : unsigned char {
@@ -66,12 +71,15 @@ inline float validOrMissing(float value, float minimum, float maximum) {
 
 inline Sample normalize(Sample value) {
     return {validOrMissing(value.temperatureC, -55, 125),
-            validOrMissing(value.ph, 0, 14), validOrMissing(value.turbidityPct, 0, 100)};
+            validOrMissing(value.ph, 0, 14), validOrMissing(value.turbidityPct, 0, 100),
+            validOrMissing(value.turbidityMv, 150, 3000),
+            validOrMissing(value.turbidityReferenceMv, 150, 3000),
+            validOrMissing(value.phMv, 150, 3000)};
 }
 
 inline bool hasError(Sample value) {
-    return !std::isfinite(value.temperatureC) || !std::isfinite(value.ph) ||
-           !std::isfinite(value.turbidityPct);
+    return !std::isfinite(value.temperatureC) || (!std::isfinite(value.ph) && !std::isfinite(value.phMv)) ||
+           (!std::isfinite(value.turbidityPct) && !(std::isfinite(value.turbidityMv) && std::isfinite(value.turbidityReferenceMv)));
 }
 
 inline bool alphanumeric(char c) {
@@ -119,12 +127,16 @@ inline bool serializeTelemetry(char* buffer, std::size_t capacity, const char* d
     numberOrNull(sample.temperatureC, temperature);
     numberOrNull(sample.ph, ph);
     numberOrNull(sample.turbidityPct, turbidity);
+    char mv[16], reference[16], phMv[16];
+    numberOrNull(sample.phMv, phMv);
+    numberOrNull(sample.turbidityMv, mv);
+    numberOrNull(sample.turbidityReferenceMv, reference);
     const int written = std::snprintf(buffer, capacity,
         "{\"schema_version\":2,\"device_id\":\"%s\",\"timestamp\":\"%s\",\"sequence\":%lu,"
         "\"temperature_c\":%s,\"ph\":%s,\"turbidity_pct\":%s,\"signal_strength_dbm\":%d,"
-        "\"sensor_status\":\"%s\"}",
+        "\"sensor_status\":\"%s\",\"turbidity_mv\":%s,\"turbidity_reference_mv\":%s,\"ph_mv\":%s}",
         device, timestamp, static_cast<unsigned long>(sequence), temperature, ph, turbidity,
-        rssi, hasError(sample) ? "error" : "normal");
+        rssi, hasError(sample) ? "error" : "normal", mv, reference, phMv);
     if (written < 0 || static_cast<std::size_t>(written) >= capacity) {
         buffer[0] = '\0';
         return false;

@@ -8,6 +8,21 @@ using namespace aquarium;
 constexpr char STAMP[] = "2026-10-19T10:00:00Z";
 
 void checkAcquisition() {
+    char phPayload[PAYLOAD_CAPACITY];
+    Sample phRaw{27, missing(), 20, missing(), missing(), 1275};
+    assert(!hasError(normalize(phRaw)));
+    assert(serializeTelemetry(phPayload, sizeof(phPayload), "ph-test", STAMP, 1, phRaw, -60));
+    assert(std::string(phPayload).find("\"ph_mv\":1275.00") != std::string::npos);
+    assert(std::string(phPayload).find("\"ph\":null") != std::string::npos);
+    assert(std::isnan(normalize({27, missing(), 20, missing(), missing(), 3300}).phMv));
+    const Sample raw = normalize({27, missing(), missing(), 291, 294});
+    assert(raw.turbidityMv == 291 && raw.turbidityReferenceMv == 294);
+    assert(std::isnan(raw.turbidityPct));
+    assert(std::isnan(normalize({27, 7, missing(), 142, 294}).turbidityMv));
+    char rawPayload[PAYLOAD_CAPACITY];
+    assert(serializeTelemetry(rawPayload, sizeof(rawPayload), "raw-test", STAMP, 1, raw, -60));
+    assert(std::string(rawPayload).find("\"turbidity_mv\":291.00") != std::string::npos);
+    assert(std::string(rawPayload).find("\"turbidity_pct\":null") != std::string::npos);
     Calibration ph{2500, 7, 2000, 4};
     assert(std::fabs(calibrate(2250, ph, 0, 14) - 5.5f) < 0.001f);
     assert(std::fabs(calibrate(2500, ph, 0, 14) - 7) < 0.001f);

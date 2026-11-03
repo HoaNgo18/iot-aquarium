@@ -112,7 +112,10 @@ inline aquarium::Sample readSensors(aquarium::Scenario scenario, std::uint32_t s
     return {
         sensor_config::ENABLE_TEMPERATURE && !aquarium::elapsed(now, sensor_runtime::temperatureAt, 2500) ? sensor_runtime::temperatureC : aquarium::missing(),
         sensor_config::ENABLE_PH ? aquarium::calibrate(sensor_runtime::phFilter.value(now), sensor_runtime::phCalibration, 0, 14, false, sensor_config::ADC_MIN_MV, sensor_config::ADC_MAX_MV) : aquarium::missing(),
-        sensor_config::ENABLE_TURBIDITY ? aquarium::calibrate(sensor_runtime::turbidityFilter.value(now), sensor_runtime::turbidityCalibration, 0, 100, true, sensor_config::ADC_MIN_MV, sensor_config::ADC_MAX_MV) : aquarium::missing()
+        sensor_config::ENABLE_TURBIDITY ? aquarium::calibrate(sensor_runtime::turbidityFilter.value(now), sensor_runtime::turbidityCalibration, 0, 100, true, sensor_config::ADC_MIN_MV, sensor_config::ADC_MAX_MV) : aquarium::missing(),
+        sensor_config::ENABLE_TURBIDITY ? sensor_runtime::turbidityFilter.value(now) : aquarium::missing(),
+        sensor_config::ENABLE_TURBIDITY ? sensor_config::TURBIDITY_CLEAR_MV : aquarium::missing(),
+        sensor_config::ENABLE_PH ? sensor_runtime::phFilter.value(now) : aquarium::missing()
     };
 #endif
 }
