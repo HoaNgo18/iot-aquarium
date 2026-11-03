@@ -113,9 +113,11 @@
                 <tr><th>Ngưỡng</th><td id="clarity-detail-rules"></td></tr>
               </tbody></table>
             </div>
-            <dialog id="clarity-confirm" aria-labelledby="clarity-confirm-title">
+            <dialog id="clarity-confirm" aria-labelledby="clarity-confirm-title" aria-describedby="clarity-confirm-hint">
               <p id="clarity-confirm-title">Bạn vừa thay nước?</p>
               <p>Lưu mốc mới lúc <span id="clarity-confirm-time"></span></p>
+              <p id="clarity-confirm-hint">Giữ đầu dò yên trong nước sạch khoảng 1–2 phút trước khi lưu.</p>
+              <p id="clarity-confirm-error" role="alert" hidden></p>
               <div class="clarity-actions"><button type="button" class="button button--primary" id="clarity-save">Lưu</button><button type="button" class="button button--secondary" id="clarity-cancel">Hủy</button></div>
             </dialog>
           </article>
@@ -147,6 +149,7 @@
                   <button type="button" data-range="1440">24 giờ</button>
                   <button type="button" data-range="10080">7 ngày</button>
                 </div>
+                <button type="button" class="button button--secondary export-open" id="export-csv-open" aria-haspopup="dialog">Xuất CSV</button>
               </div>
             </div>
             <div class="chart-legend">
@@ -189,5 +192,27 @@
     </div>
 
     <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <dialog id="export-csv" class="dashboard-dialog" aria-labelledby="export-csv-title" aria-describedby="export-csv-desc">
+      <form id="export-csv-form" novalidate>
+        <h2 id="export-csv-title">Xuất dữ liệu CSV</h2>
+        <p class="field-hint" id="export-csv-desc">Toàn bộ mẫu đo của <strong id="export-csv-device"></strong>, không rút gọn như biểu đồ. Thời gian theo giờ máy của bạn.</p>
+        <div class="segmented export-presets" role="group" aria-label="Chọn nhanh khoảng thời gian">
+          <button type="button" data-export-preset="60">1 giờ</button>
+          <button type="button" data-export-preset="360">6 giờ</button>
+          <button type="button" data-export-preset="1440">24 giờ</button>
+          <button type="button" data-export-preset="10080">7 ngày</button>
+        </div>
+        <div class="field-pair">
+          <label class="field" id="export-from-field">Từ<span class="input-shell"><input type="datetime-local" id="export-from" required></span></label>
+          <label class="field" id="export-to-field">Đến<span class="input-shell"><input type="datetime-local" id="export-to" required></span></label>
+        </div>
+        <p class="field-error" id="export-csv-error" role="alert"></p>
+        <p class="field-hint">Tối đa 31 ngày mỗi lần. File có cả giờ UTC và giờ Việt Nam; ô trống nghĩa là cảm biến không có số đo hợp lệ ở mẫu đó.</p>
+        <div class="dialog-actions">
+          <button type="button" class="button button--secondary" id="export-csv-cancel">Hủy</button>
+          <button type="submit" class="button button--primary" id="export-csv-submit">Tải CSV</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="device-info" class="dashboard-dialog" aria-labelledby="device-info-title"><form method="dialog"><h2 id="device-info-title">Kết nối thiết bị</h2><p>WiFi: <strong id="rssi-value">—</strong></p><p id="sensor-health"></p><button class="button button--secondary">Đóng</button></form></dialog>
     <dialog id="all-alerts" class="dashboard-dialog" aria-labelledby="all-alerts-title"><form method="dialog" class="dialog-heading"><h2 id="all-alerts-title">Tất cả cảnh báo</h2><button class="button button--secondary">Đóng</button></form><div id="all-alerts-content"></div></dialog>

@@ -1,1 +1,1 @@
-export function mountDashboard(root: HTMLElement, onDeviceChange: (id: string) => void, realtimeLabel: () => string): { refresh: () => Promise<void>; dispose: () => void };
+export function mountDashboard(root: HTMLElement, onDeviceChange: (id: string) => void, realtimeLabel: () => string, options?: { deviceId?: string; embedded?: boolean }): { refresh: () => Promise<void>; dispose: () => void };

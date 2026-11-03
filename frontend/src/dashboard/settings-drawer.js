@@ -211,5 +211,6 @@ export function mountSettingsDrawer(root, options) {
   listen($('#settings-history-retry'), 'click', loadHistory);
   listen(root.ownerDocument.defaultView, 'resize', render);
   return { accept, dirty, refreshHistory: () => drawer.open ? loadHistory() : Promise.resolve(),
+    setBaselineStatus: message => { $('#settings-status').textContent = message; },
     dispose() { lifetime.abort(); loadGeneration++; requestGeneration++; drawer.remove(); root.ownerDocument.body.classList.remove('settings-open'); } };
 }

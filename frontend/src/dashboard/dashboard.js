@@ -3,8 +3,10 @@ import { durationLabel, clarityRuleText, sensorSummary, clarityPresentation, tem
 import { mountSettingsDrawer } from './settings-drawer.js';
 import { clarityScale, compressedTimeline } from './chart-layout.js';
 import { lastKnownReading, readingState, elapsedLabel, phReading } from './reading-state.js';
+import { toLocalInput, presetRange, exportRange, downloadCsv, saveBlob } from './export-csv.js';
 
-export function mountDashboard(root, onDeviceChange, realtimeLabel) {
+export function mountDashboard(root, onDeviceChange, realtimeLabel, options = {}) {
+if (options.embedded) root.classList.add('is-embedded');
 const lifetime = new AbortController();
 const request = (id, suffix, options = {}) => apiRequest(id, suffix, { ...options, signal: lifetime.signal });
 const listeners = [];
@@ -51,6 +53,7 @@ function age(timestamp) {
 
 const dashboardRoot = root;
 const $ = (selector, root = dashboardRoot) => root.querySelector(selector);
+const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const vnTime = (date, withSeconds = false) => new Intl.DateTimeFormat('vi-VN', {
@@ -270,7 +273,7 @@ class HistoryChart {
         if (stamp < data[0].time || stamp > data.at(-1).time) return;
         const px = pad.left + timeline.position(stamp) / timeline.span * plotW;
         ctx.strokeStyle = '#8fa7b0'; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(px, pad.top); ctx.lineTo(px, pad.top + plotH); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = '#bacad2'; ctx.font = '12px sans-serif'; ctx.fillText(event.water_changed ? 'Thay nước / đặt mốc' : 'Đặt mốc', Math.min(px + 3, width - 150), pad.top + 12);
+        ctx.fillStyle = cssVar('--chart-axis'); ctx.font = '12px sans-serif'; ctx.fillText(event.water_changed ? 'Thay nước / đặt mốc' : 'Đặt mốc', Math.min(px + 3, width - 150), pad.top + 12);
       });
     }
     if (!['clarity', 'phVoltage', 'turbidityVoltage', 'turbidityChange'].includes(metric)) {
@@ -289,12 +292,12 @@ class HistoryChart {
     for (const value of scale.ticks ?? Array.from({ length: 5 }, (_, i) => scale.max - i * (scale.max - scale.min) / 4)) {
       const py = y(value);
       ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(width - pad.right, py); ctx.strokeStyle = 'rgba(49,87,100,.24)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#d5dfe6'; ctx.textAlign = 'right'; ctx.fillText(value.toFixed(metric === 'ph' ? 1 : 0), pad.left - 9, py);
+      ctx.fillStyle = cssVar('--chart-axis'); ctx.textAlign = 'right'; ctx.fillText(value.toFixed(metric === 'ph' ? 1 : 0), pad.left - 9, py);
     }
     const tickCount = width < 600 ? 4 : 6;
     const ticks = [...new Set(Array.from({ length: tickCount }, (_, i) => Math.round(i * (data.length - 1) / (tickCount - 1))))];
     for (const index of ticks) {
-      ctx.fillStyle = '#d5dfe6'; ctx.textAlign = index === 0 ? 'left' : index === data.length - 1 ? 'right' : 'center'; ctx.fillText(state.range > 1440 ? data[index].time.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : vnTime(data[index].time), x(index), height - 13);
+      ctx.fillStyle = cssVar('--chart-axis'); ctx.textAlign = index === 0 ? 'left' : index === data.length - 1 ? 'right' : 'center'; ctx.fillText(state.range > 1440 ? data[index].time.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : vnTime(data[index].time), x(index), height - 13);
     }
     if (timeline.tail) { ctx.textAlign = 'right'; ctx.fillText('Hiện tại', width - pad.right, height - 13); }
 
@@ -303,7 +306,7 @@ class HistoryChart {
       : [{ value: threshold.min, label: `Tối thiểu ${threshold.min}`, color: '#f6b94d' }, { value: threshold.max, label: `Tối đa ${threshold.max}`, color: '#f6b94d' }];
     lines.forEach((line) => {
       const py = y(line.value); ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(width - pad.right, py); ctx.strokeStyle = line.color; ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
-      const labelWidth = ctx.measureText(line.label).width + 12; ctx.fillStyle = '#0d1d24'; ctx.fillRect(width - pad.right - labelWidth, py - 8, labelWidth, 15); ctx.fillStyle = line.color; ctx.textAlign = 'right'; ctx.fillText(line.label, width - pad.right - 5, py);
+      const labelWidth = ctx.measureText(line.label).width + 12; ctx.fillStyle = cssVar('--chart-label-bg'); ctx.fillRect(width - pad.right - labelWidth, py - 8, labelWidth, 15); ctx.fillStyle = line.color; ctx.textAlign = 'right'; ctx.fillText(line.label, width - pad.right - 5, py);
     });
 
     let connected = false;
@@ -322,7 +325,7 @@ class HistoryChart {
     if (this.hoverIndex != null && Number.isFinite(data[this.hoverIndex]?.[metric])) {
       const item = data[this.hoverIndex]; const px = x(this.hoverIndex); const py = y(item[metric]);
       ctx.beginPath(); ctx.moveTo(px, pad.top); ctx.lineTo(px, pad.top + plotH); ctx.strokeStyle = 'rgba(181,200,207,.45)'; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
-      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fillStyle = '#071116'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = config.color; ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fillStyle = cssVar('--chart-point-bg'); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = config.color; ctx.stroke();
     }
     this.geometry = { data, pad, plotW, plotH, x, y, tailStart: timeline.tail ? x(data.length - 1) : null };
   }
@@ -452,28 +455,89 @@ listen($('#clarity-details-toggle'), 'click', event => {
   event.currentTarget.setAttribute('aria-expanded', String(open)); $('#clarity-details').hidden = !open;
 });
 listen($('#set-clean-reference'), 'click', () => {
-  $('#clarity-confirm-time').textContent = vnTime(new Date()); $('#clarity-confirm').showModal();
+  const confirmation = $('#clarity-confirm');
+  // Keep the confirmation inside the active modal so its controls stay accessible.
+  ($('#settings-drawer').open ? $('#settings-drawer') : dashboardRoot).append(confirmation);
+  $('#clarity-confirm-error').hidden = true;
+  $('#clarity-confirm-error').textContent = '';
+  $('#clarity-confirm-time').textContent = vnTime(new Date()); confirmation.showModal();
 });
 listen($('#clarity-cancel'), 'click', () => $('#clarity-confirm').close());
+listen($('#clarity-confirm'), 'cancel', event => { if (state.baselineSaving) event.preventDefault(); });
 listen($('#clarity-save'), 'click', async () => {
   if (state.baselineSaving) return;
-  $('#clarity-confirm').close();
   const id = state.deviceId;
+  const errorMessage = $('#clarity-confirm-error');
+  errorMessage.hidden = true; errorMessage.textContent = '';
+  $('#clarity-confirm').setAttribute('aria-busy', 'true');
+  $('#clarity-save').disabled = true; $('#clarity-save').textContent = 'Đang lưu…';
+  $('#clarity-cancel').disabled = true;
   state.baselineSaving = true; $('#device-select').disabled = true; updateKpis();
   settingsDrawer.accept(state.settings, state.deviceId);
   try {
     await request(id, '/clarity/baselines', { method: 'POST', body: JSON.stringify({ water_changed: true }) });
+    $('#clarity-confirm').close();
+    settingsDrawer.setBaselineStatus('Đã lưu mốc nước sạch. Áp dụng cho các mẫu mới.');
     showToast('Đã lưu mốc nước sạch', 'Áp dụng cho các mẫu mới; lịch sử cũ giữ nguyên.');
     await refreshData();
     await settingsDrawer.refreshHistory();
-  } catch (error) { showToast('Chưa đặt được mốc', escapeHtml(error.message), 'error'); }
-  finally { state.baselineSaving = false; $('#device-select').disabled = state.saving; settingsDrawer.accept(state.settings, state.deviceId); updateKpis(); }
+  } catch (error) {
+    errorMessage.textContent = `Chưa đặt được mốc. ${error.message}`;
+    errorMessage.hidden = false;
+  } finally {
+    state.baselineSaving = false;
+    $('#clarity-confirm').setAttribute('aria-busy', 'false');
+    $('#clarity-save').disabled = false; $('#clarity-save').textContent = 'Lưu';
+    $('#clarity-cancel').disabled = false;
+    $('#device-select').disabled = state.saving; settingsDrawer.accept(state.settings, state.deviceId); updateKpis();
+  }
 });
 listen($('#metric-select'), 'change', (event) => { state.metric = event.target.value; updateChart(); });
 $$('[data-range]').forEach((button) => listen(button, 'click', () => {
   $$('[data-range]').forEach((item) => { const active = item === button; item.classList.toggle('is-active', active); item.setAttribute('aria-pressed', String(active)); });
   state.range = Number(button.dataset.range); updateChart(); refreshData();
 }));
+const exportDialog = $('#export-csv');
+let exportBusy = false;
+const setExportRange = (from, to, preset = null) => {
+  $('#export-from').value = toLocalInput(from); $('#export-to').value = toLocalInput(to);
+  $$('[data-export-preset]').forEach(item => item.setAttribute('aria-pressed', String(Number(item.dataset.exportPreset) === preset)));
+  $('#export-csv-error').textContent = '';
+  ['#export-from-field', '#export-to-field'].forEach(id => $(id).classList.remove('is-invalid'));
+};
+listen($('#export-csv-open'), 'click', () => {
+  const preset = Math.max(60, state.range); const { from, to } = presetRange(preset);
+  $('#export-csv-device').textContent = state.deviceId;
+  setExportRange(from, to, [60, 360, 1440, 10080].includes(preset) ? preset : null);
+  exportDialog.showModal();
+});
+$$('[data-export-preset]').forEach(button => listen(button, 'click', () => {
+  const minutes = Number(button.dataset.exportPreset); const { from, to } = presetRange(minutes); setExportRange(from, to, minutes);
+}));
+['#export-from', '#export-to'].forEach(id => listen($(id), 'input', () => {
+  $$('[data-export-preset]').forEach(item => item.setAttribute('aria-pressed', 'false')); $('#export-csv-error').textContent = '';
+}));
+listen($('#export-csv-cancel'), 'click', () => { if (!exportBusy) exportDialog.close(); });
+listen(exportDialog, 'cancel', event => { if (exportBusy) event.preventDefault(); });
+listen($('#export-csv-form'), 'submit', async event => {
+  event.preventDefault(); if (exportBusy) return;
+  const range = exportRange($('#export-from').value, $('#export-to').value);
+  const invalid = Boolean(range.error);
+  ['#export-from-field', '#export-to-field'].forEach(id => $(id).classList.toggle('is-invalid', invalid));
+  if (invalid) { $('#export-csv-error').textContent = range.error; return; }
+  const submit = $('#export-csv-submit'); const deviceId = state.deviceId;
+  exportBusy = true; submit.disabled = true; submit.textContent = 'Đang xuất…'; $('#export-csv-error').textContent = '';
+  try {
+    const result = await downloadCsv(deviceId, range.from, range.to, lifetime.signal);
+    if (result.rows === 0) { $('#export-csv-error').textContent = 'Không có mẫu nào trong khoảng đã chọn.'; return; }
+    saveBlob(result.blob, result.filename);
+    exportDialog.close();
+    showToast('Đã xuất CSV', `${result.rows ?? ''} mẫu · ${escapeHtml(result.filename)}`);
+  } catch (error) {
+    if (lifetime.signal.aborted) return;
+    $('#export-csv-error').textContent = error.name === 'TimeoutError' ? 'Quá thời gian chờ máy chủ. Thử khoảng ngắn hơn.' : error.message;
+  } finally { exportBusy = false; submit.disabled = false; submit.textContent = 'Tải CSV'; }
+});
 $$('[data-tab]').forEach((button) => listen(button, 'click', () => {
   state.alertTab = button.dataset.tab; $$('[data-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === button))); renderAlerts();
 }));
@@ -486,8 +550,9 @@ listen(root, 'click', async event => {
 });
 listen(window, 'beforeunload', (event) => { if (!settingsDrawer.dirty()) return; event.preventDefault(); event.returnValue = ''; });
 listen(window, 'resize', () => { updateKpis(); chart.draw(); renderAlerts(); });
+listen(window, 'aquasense:theme', () => renderAll());
 
-const requestedDevice = new URLSearchParams(location.search).get('device_id');
+const requestedDevice = options.deviceId ?? new URLSearchParams(location.search).get('device_id');
 const validId = value => /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value);
 if (requestedDevice && validId(requestedDevice)) state.deviceId = requestedDevice;
 $('#device-select').replaceChildren(...[...new Set([state.deviceId, 'tank-demo-001', 'tank-preview-001'])].map(id => new Option(id, id)));
