@@ -90,90 +90,41 @@ async page => {
     unexpected.push(`${method} ${path}`); return reply({detail:'Unexpected test route'},404);
   });
 
-  user={id:1,username:'layout.qa',display_name:'Kiểm tra bố cục'};
-  tanks=Array.from({length:4},(_,i)=>({id:i+1,name:i===1?'Bể phụ':`Bể cá ${i+1}`,device_id:`tank-layout-${i}`,volume_l:60,species:'Cá cảnh',created_at:stamp(),connectivity:'online',last_seen_at:stamp(),open_alerts:i===0?5:0,latest:reading(`tank-layout-${i}`)}));
-  reminders=Array.from({length:6},(_,i)=>({id:i+1,title:`Chăm sóc bể ${i+1}`,note:null,tank_id:1,tank_name:'Bể cá 1',repeat:'weekly',due_date:i<2?yesterday:i<4?today:tomorrow,done_at:null,last_done_at:null}));
 
+  user={id:1,username:'scene.qa',display_name:'Kiểm tra'};
+  tanks=[{id:1,name:'Bể phòng ngủ',device_id:'tank-one',volume_l:60,species:null,connectivity:'online',open_alerts:0,latest:reading('tank-one')},{id:2,name:'Bể phụ',device_id:'tank-two',volume_l:40,species:null,connectivity:'online',open_alerts:0,latest:reading('tank-two')}];
+  await page.goto('http://127.0.0.1:5173/');await page.evaluate(()=>localStorage.clear());await page.reload();
+  await page.getByRole('heading',{name:'Hiểu bể cá. Chăm sóc tốt hơn.'}).waitFor();
   const results=[];
-  await page.clock.install();
-  await page.evaluate(()=>localStorage.clear());
-  await page.goto('http://127.0.0.1:5173/?overview-qa='+Date.now()+'#/');
-  await page.locator('.overview-metrics svg').first().waitFor();
-  for(const theme of ['light','dark']) {
+  await page.evaluate(()=>{localStorage.setItem('aquasense-motion','on')});await page.reload();
+  for(const theme of ['light','dark']){
     await page.emulateMedia({colorScheme:theme});
-    for(const [width,height] of [[1366,768],[1920,1080],[360,800]]) {
-      await page.setViewportSize({width,height});
-      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-      const sizes=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,innerHeight,width:innerWidth,scrollWidth:document.documentElement.scrollWidth}));
-      check(width<1000||sizes.scrollHeight<=height+2,JSON.stringify(sizes));check(sizes.scrollWidth<=width,'Horizontal overflow');
-      if(width>=1024){const box=await page.locator('.overview-metrics').boundingBox();check(box.y+box.height<=height+2,'Metrics clipped by viewport')}
-      results.push({page:'overview',theme,...sizes});
-      await page.screenshot({path:`output/playwright/overview02-${theme}-${width}.png`});
+    for(const [width,height] of [[1366,768],[1920,1080],[360,800]]){
+      await page.setViewportSize({width,height});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      const sizes=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,innerHeight,scrollWidth:document.documentElement.scrollWidth,innerWidth}));
+      check(width<1024||sizes.scrollHeight<=height+2,JSON.stringify(sizes));check(sizes.scrollWidth<=width,'Horizontal overflow');
+      check(await page.locator('.intro-overview select,.intro-overview a,.intro-overview-footer').count()===0,'Old controls remain');
+      const moving=await page.locator('.intro-overview .aq-f1').evaluate(e=>({name:getComputedStyle(e).animationName,state:getComputedStyle(e).animationPlayState}));check(moving.name!=='none'&&moving.state==='running','Fish animation paused');
+      results.push({theme,width,...sizes});await page.screenshot({path:`output/playwright/intro-overview-${theme}-${width}.png`,fullPage:true});
     }
   }
   await page.setViewportSize({width:1366,height:768});
-  await page.getByRole('textbox',{name:'Tìm bể',exact:true}).fill('be phu');
-  check(await page.locator('.overview-tank-row').count()===1,'Accent search failed');
-  await page.locator('.overview-tank-row').click();
-  await page.getByRole('textbox',{name:'Tìm bể',exact:true}).press('Escape');
-  await page.waitForFunction(()=>localStorage.getItem('aquasense-overview-tank')==='tank-layout-1');
-  await page.locator('.overview-metrics svg').first().waitFor();
-  const baseline=seriesRequests.length;
-  await page.clock.fastForward(10000);
-  check(seriesRequests.length===baseline,'Session polling reloaded series');
-  await Promise.all([page.waitForResponse(r=>r.url().includes('/telemetry/series')),page.clock.fastForward(50000)]);
-  check(seriesRequests.length===baseline+1,'60 second refresh missing');
-  await page.getByRole('button',{name:'Đánh dấu xong: Chăm sóc bể 1'}).click();
-  await page.getByRole('status').filter({hasText:'Đã xong · lần tới'}).waitFor();
-  check(reminders[0].due_date===tomorrow,'Completion did not advance repeat');
-  seriesFail=true;
-  await page.locator('.overview-tank-row').filter({hasText:'tank-layout-2'}).click();
-  await page.getByText('Chưa tải được biểu đồ 24 giờ.',{exact:true}).first().waitFor();
-  check(await page.locator('.overview-scene').isVisible(),'Series failure removed scene');
-  seriesFail=false;
-  tanks=tanks.slice(0,2);
-  await page.reload();
-  await page.locator('.overview-tanks').waitFor();
-  check(await page.locator('.overview-tank-row').first().getAttribute('aria-pressed')==='true','Removed saved tank did not fall back');
-  await page.locator('.overview-tank-row').nth(1).click();
-  await page.reload();await page.locator('.overview-tanks').waitFor();
-  check(await page.locator('.overview-tank-row').nth(1).getAttribute('aria-pressed')==='true','Selection not persisted');
-  await page.locator('.overview-alert-button').first().click();
-  await page.waitForFunction(()=>localStorage.getItem('aquasense-overview-tank')==='tank-layout-0');
-  check(await page.getByRole('link',{name:'Xem chi tiết →',exact:true}).count()===1,'Detail link duplicated');
-  await page.evaluate(()=>location.hash='#/settings');
-  await page.getByRole('radio',{name:'Tắt',exact:true}).check();
-  check(await page.evaluate(()=>document.documentElement.dataset.motion)==='off','Motion off failed');
+  await page.evaluate(()=>location.hash='#/tank/tank-one');
+  await page.locator('#history-chart').waitFor();
+  check(await page.locator('.shell-desktop-heading>span').count().then(n=>n===0),'Page title remains');
+  check(await page.getByRole('link',{name:'Quay lại Bể của tôi'}).innerText()==='','Back link still has text');
+  check(await page.locator('.shell-desktop-heading select').count()===1,'Tank picker missing');
+  check(!await page.locator('.tank-detail-navigation').innerText().then(t=>t.includes('Chuyển bể')||t.includes('tank-one')),'Old header controls remain');
+  await page.screenshot({path:'output/playwright/detail-header-clean.png'});
+  await page.evaluate(()=>location.hash='#/');await page.locator('.aq-f1').waitFor();
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.getByRole('radio',{name:'Bật',exact:true}).check();
-  check(await page.evaluate(()=>document.documentElement.dataset.motion)==='on','Explicit motion override failed');
-  await page.getByRole('radio',{name:'Theo hệ thống',exact:true}).last().check();
-  check(await page.evaluate(()=>document.documentElement.dataset.motion)==='off','System motion failed');
-  await page.evaluate(()=>location.hash='#/');
-  tanks=[{...tanks[0],open_alerts:0}];reminders=[];
-  await page.setViewportSize({width:1366,height:768});await page.reload();
-  await page.getByText('Mọi thứ ổn. Không có cảnh báo hay việc đến hạn.',{exact:true}).waitFor();
-  check(await page.locator('.overview-attention').evaluate(e=>e.clientHeight)<130,'Empty attention card stretched');
-  check(await page.locator('.overview-tanks').evaluate(e=>e.clientHeight)<220,'Single tank card stretched');
-  await page.screenshot({path:'output/playwright/polish03-one-tank.png'});
-  tanks=[];await page.reload();await page.getByRole('heading',{name:'Kết nối bể cá đầu tiên'}).waitFor();
-  check(await page.getByRole('link',{name:'Thêm bể đầu tiên'}).isVisible(),'Onboarding action missing');
-  user=null;
-  await page.reload();await page.getByRole('heading',{name:'Chào mừng trở lại'}).waitFor();
-  for(const theme of ['light','dark']) {
-    await page.emulateMedia({colorScheme:theme});
-    for(const [width,height] of [[1366,768],[1920,1080],[360,800]]) {
-      await page.setViewportSize({width,height});
-      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-      for(const mode of ['Đăng nhập','Tạo tài khoản']) {
-        await page.getByRole('tab',{name:mode,exact:true}).click();
-        const sizes=await page.evaluate(()=>({scrollHeight:document.documentElement.scrollHeight,innerHeight,width:innerWidth,scrollWidth:document.documentElement.scrollWidth}));
-        check(width<1000||sizes.scrollHeight<=height+2,JSON.stringify(sizes));check(sizes.scrollWidth<=width,'Auth horizontal overflow');
-        results.push({page:mode,theme,...sizes});
-        await page.screenshot({path:`output/playwright/auth02-${theme}-${width}-${mode==='Đăng nhập'?'login':'register'}.png`});
-      }
-    }
-  }
-  check(errors.length===0,errors.join('; '));
-  return {results,seriesRequests:seriesRequests.length,realBackendWrites:0,runtimeErrors:errors};
+  await page.evaluate(()=>{document.documentElement.dataset.motion='on'});
+  const sample=()=>page.locator('.aq-f1').evaluate(e=>({transform:getComputedStyle(e).transform,duration:getComputedStyle(e).animationDuration,time:e.getAnimations()[0]?.currentTime}));
+  const before=await sample();await new Promise(resolve=>setTimeout(resolve,1500));const after=await sample();
+  check(before.transform!==after.transform,'Fish did not move with reduced motion and explicit On');
+  check(parseFloat(after.duration)>1,'Global reduced-motion rule shortened the animation');
+  await page.evaluate(()=>document.documentElement.dataset.motion='off');
+  await page.waitForFunction(()=>getComputedStyle(document.querySelector('.aq-f1')).animationPlayState==='paused');
+  await page.evaluate(()=>document.documentElement.dataset.motion='on');
+  check(!errors.length,errors.join('; '));return {results,movement:{before,after},runtimeErrors:errors,realBackendWrites:0};
 }

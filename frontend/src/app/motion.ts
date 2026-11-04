@@ -3,4 +3,6 @@ export type MotionPreference='on'|'off'|'system'
 export function motionPreference(value:string|null):MotionPreference {return value==='on'||value==='off'?value:'system'}
 export function resolveMotion(value:MotionPreference,reduced:boolean):'on'|'off' {return value==='system'?(reduced?'off':'on'):value}
 export function applyMotion(value:MotionPreference){document.documentElement.dataset.motion=resolveMotion(value,window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
-export function initMotion(){const update=()=>applyMotion(motionPreference(readStorage('aquasense-motion')));update();window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',update)}
+export function initMotion(){
+  try{if(localStorage.getItem('aquasense-effects-v1')!=='enabled'){localStorage.setItem('aquasense-motion','on');localStorage.setItem('aquasense-effects-v1','enabled')}}catch{}
+  const update=()=>applyMotion(motionPreference(readStorage('aquasense-motion')));update();window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',update)}

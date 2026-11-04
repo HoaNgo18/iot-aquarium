@@ -71,6 +71,7 @@ export function useRealtime(deviceId: Ref<string>, sync: () => Promise<void>) {
       return
     }
     const targetDevice = deviceId.value
+    if (!targetDevice) return
     const url = new URL('/ws', window.location.href)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     url.searchParams.set('device_id', targetDevice)

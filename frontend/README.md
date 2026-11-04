@@ -24,7 +24,7 @@ npm run build
 
 Vite/Nginx chuyển `/api` và `/ws` tới backend. Phiên đăng nhập dùng cookie httpOnly cùng origin. Không lưu mật khẩu hoặc token trong localStorage; chỉ lưu lựa chọn giao diện, trạng thái thanh bên và bể đang chọn (`aquasense-overview-tank`).
 
-Tổng quan hiển thị bể đang chọn, ba số đo, biểu đồ 24 giờ, cảnh báo và việc đến hạn. Biểu đồ tải riêng mỗi 60 giây, huỷ yêu cầu khi đổi bể. Phần giới thiệu dự án nằm trên trang đăng nhập.
+Tổng quan hiển thị mô hình bể cá lớn của bể đang chọn, kèm một dòng số đo ngắn. Các chức năng quản lý và biểu đồ chi tiết nằm ở Bể của tôi. Biểu đồ tải riêng mỗi 60 giây, huỷ yêu cầu khi đổi bể. Phần giới thiệu dự án nằm trên trang đăng nhập.
 
 ## Cấu trúc
 

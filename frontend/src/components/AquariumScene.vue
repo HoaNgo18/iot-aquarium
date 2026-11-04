@@ -7,6 +7,10 @@ const props = defineProps<{
   clarityState: 'clear' | 'slight' | 'cloudy' | null | undefined
   online: boolean; alert: boolean; stamp?: string; compact?: boolean
 }>()
+const effects=ref(document.documentElement.dataset.motion??'on')
+const motionObserver=new MutationObserver(()=>{effects.value=document.documentElement.dataset.motion??'on'})
+onMounted(()=>motionObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-motion']}))
+onBeforeUnmount(()=>motionObserver.disconnect())
 const paused=ref(document.hidden)
 const visibility=()=>{paused.value=document.hidden}
 onMounted(()=>document.addEventListener('visibilitychange',visibility))
@@ -25,7 +29,7 @@ const stampText = computed(() => props.stamp ?? (!props.online ? 'Mất kết n�
 const description = computed(() => `Mô hình bể cá. ${props.online ? 'Có kết nối' : 'Mất kết nối, số đo cuối'}. Nhiệt độ ${finite(props.temperature) ? `${numberText(props.temperature)} độ C` : 'chưa có số đo'}, pH ${numberText(props.ph, 2)}, độ trong ${clarityText.value.toLowerCase()} ${finite(props.clarity) ? `${numberText(props.clarity, 0)} phần trăm` : ''}.${props.alert ? ' Có cảnh báo.' : ''}`)
 </script>
 <template>
-  <div class="aq-root" :class="[`aq-${mode}`, { 'aq-alert': alert, 'is-paused': paused, 'aq-compact': compact }]">
+  <div class="aq-root" :data-effects="effects" :class="[`aq-${mode}`, { 'aq-alert': alert, 'is-paused': paused, 'aq-compact': compact }]">
     <svg class="aq-illustration" :viewBox="compact ? '30 16 620 354' : '0 0 760 460'" role="img" :aria-label="description">
       <defs>
         <linearGradient :id="waterId" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--aq-water-top)" /><stop offset="1" stop-color="var(--aq-water-bottom)" /></linearGradient>
@@ -96,8 +100,8 @@ const description = computed(() => `Mô hình bể cá. ${props.online ? 'Có k�
 @keyframes aq-rise { 0% {transform:translateY(0);opacity:0} 10% {opacity:.75} 85% {opacity:.5} 50% {transform:translate(7px,-130px)} 100% {transform:translate(-4px,-265px);opacity:0} }
 @keyframes aq-sway { 0%,100% {transform:rotate(-3deg)} 50% {transform:rotate(3deg)} }
 @keyframes aq-pulse { 0%,100% {opacity:1} 50% {opacity:.6} }
- .is-paused *,:global(html[data-motion="off"]) .aq-root * {animation-play-state:paused!important}
-@media(prefers-reduced-motion:reduce) { :global(html:not([data-motion="on"])) .aq-root * {animation-play-state:paused!important} }
+ .is-paused *,.aq-root[data-effects="off"] * {animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce) { .aq-root[data-effects="off"] * {animation-play-state:paused!important} }
 .aq-wave{animation:aq-wave 8s linear infinite}
 .aq-ray{opacity:.04;animation:aq-ray 7s ease-in-out infinite;fill-opacity:1}
 .aq-tail{transform-box:fill-box;transform-origin:100% 50%;animation:aq-tail .8s ease-in-out infinite}
