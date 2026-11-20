@@ -2,7 +2,7 @@ import { snapshot, request as apiRequest, metricStatus } from './api.js';
 import { durationLabel, clarityRuleText, sensorSummary, clarityPresentation, temperaturePresentation, CLARITY_DISPLAY_MAX_PCT } from './presentation.js';
 import { mountSettingsDrawer } from './settings-drawer.js';
 import { clarityScale, compressedTimeline } from './chart-layout.js';
-import { lastKnownReading, readingState, elapsedLabel, phReading } from './reading-state.js';
+import { lastKnownReading, readingState, elapsedLabel, phReading, sensorConnectionBadge } from './reading-state.js';
 import { toLocalInput, presetRange, exportRange, downloadCsv, saveBlob } from './export-csv.js';
 
 export function mountDashboard(root, onDeviceChange, realtimeLabel, options = {}) {
@@ -194,7 +194,7 @@ function updateKpis() {
       if (display.kind === 'live') trend.textContent = `${text.note} · cập nhật ${vnTime(row.time)}`;
       $('[data-clarity-warning]', card).hidden = !text.outside;
       drawSparkline($('.sparkline', card), state.data.slice(-22).map(item => item.clarity), text.outside ? '#aebdcb' : config.color);
-      if (display.kind === 'never') trend.textContent = 'Chưa từng có số đo hợp lệ';
+      if (display.kind === 'never') trend.textContent = 'Chưa nhận được tín hiệu cảm biến';
       $('[data-probe-voltage]', card).textContent = Number.isFinite(row?.turbidityVoltage) ? `${row.turbidityVoltage.toFixed(1).replace('.', ',')} mV` : 'Chưa có mẫu';
       $('#clarity-filtered-voltage').textContent = Number.isFinite(row?.clarityMv) ? `${row.clarityMv.toFixed(1).replace('.', ',')} mV` : 'Chưa có mẫu';
       $('#clarity-detail-value').textContent = row ? `${value.toFixed(0)}%` : '—';
@@ -202,7 +202,7 @@ function updateKpis() {
       const rules = clarityRuleText(state.clarityConfig);
       $('#clarity-detail-rules').textContent = `${rules.zones}. ${rules.recovery}`;
       $('#clarity-filter-details').textContent = `Trung vị ${state.settings?.values.median_window ?? 15} mẫu, EMA ${state.settings?.values.ema_seconds ?? 20} giây`;
-      const freshMv = profile.online && state.latest && Date.now() - state.latest.time < 60000 && Number.isFinite(state.latest.turbidityVoltage);
+      const freshMv = display.kind === 'live' && profile.online && state.latest && Date.now() - state.latest.time < 60000 && Number.isFinite(state.latest.turbidityVoltage);
       const reason = state.baselineSaving ? 'Đang lưu mốc nước sạch' : !profile.online ? 'Thiết bị mất kết nối. Cần mẫu mới để đặt mốc nước sạch.' : !freshMv ? 'Chờ số đo độ trong hợp lệ mới để đặt mốc.' : '';
       $('#set-clean-reference').disabled = Boolean(reason);
       $('[data-baseline-control]', card).title = reason || 'Đặt mốc từ nước sạch hiện tại';
@@ -212,6 +212,12 @@ function updateKpis() {
         : baseline ? `Mốc đặt lúc ${vnTime(new Date(baseline.created_at))}`
         : Number.isFinite(row?.turbidityReference) ? `Đang dùng mốc thử ${row.turbidityReference.toFixed(0)} mV` : 'Chưa đặt mốc nước sạch';
     }
+    // Connection is independent of calibration and threshold warnings.
+    badge.textContent = sensorConnectionBadge(display.kind);
+    badge.className = `status-badge status-badge--${display.kind === 'live' ? 'normal' : 'neutral'}`;
+    badge.title = metric === 'clarity' ? 'Chỉ số độ trong tương đối, chưa hiệu chuẩn NTU.'
+      : metric === 'ph' && displayMetric === 'phVoltage' ? 'Đã nhận tín hiệu điện áp, chưa hiệu chuẩn pH.' : '';
+    if (display.kind !== 'live') card.dataset.status = 'neutral';
   });
 
 }
