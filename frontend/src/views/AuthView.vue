@@ -10,7 +10,11 @@ const mode = ref<'login' | 'register'>('login')
 const username = ref(''), name = ref(''), password = ref(''), confirmation = ref('')
 const error = ref(''), busy = ref(false)
 watch(mode, () => { password.value = confirmation.value = error.value = '' })
-async function switchTab() { mode.value = mode.value === 'login' ? 'register' : 'login'; await nextTick(); document.getElementById(`auth-${mode.value}-tab`)?.focus() }
+async function switchMode(nextMode: 'login' | 'register') {
+  mode.value = nextMode
+  await nextTick()
+  document.getElementById(nextMode === 'register' ? 'auth-display-name' : 'auth-username')?.focus()
+}
 async function submit() {
   error.value = ''
   const normalized = username.value.trim().toLowerCase()
@@ -38,15 +42,18 @@ async function submit() {
 </section>
     <section class="shell-auth-card" aria-labelledby="auth-title">
       <p class="shell-eyebrow">CHĂM BỂ CÁ, THẢNH THƠI HƠN</p><h1 id="auth-title">{{ mode === 'login' ? 'Chào mừng trở lại' : 'Bắt đầu với AquaSense' }}</h1><p class="shell-muted">{{ mode === 'login' ? 'Đăng nhập để theo dõi bể cá của bạn.' : 'Tạo tài khoản để kết nối bể cá đầu tiên.' }}</p>
-      <div class="shell-auth-tabs" role="tablist" aria-label="Tài khoản"><button id="auth-login-tab" type="button" role="tab" :aria-selected="mode === 'login'" aria-controls="auth-panel" :tabindex="mode === 'login' ? 0 : -1" :disabled="busy" @click="mode = 'login'" @keydown.right.prevent="switchTab" @keydown.left.prevent="switchTab">Đăng nhập</button><button id="auth-register-tab" type="button" role="tab" :aria-selected="mode === 'register'" aria-controls="auth-panel" :tabindex="mode === 'register' ? 0 : -1" :disabled="busy" @click="mode = 'register'" @keydown.left.prevent="switchTab" @keydown.right.prevent="switchTab">Tạo tài khoản</button></div>
-      <form id="auth-panel" role="tabpanel" :aria-labelledby="mode === 'login' ? 'auth-login-tab' : 'auth-register-tab'" class="shell-form" novalidate :aria-busy="busy" @submit.prevent="submit">
-        <label v-if="mode === 'register'" class="shell-field">Tên hiển thị<input v-model="name" autocomplete="name" maxlength="64" :disabled="busy" required placeholder="Tên của bạn" /></label>
-        <label class="shell-field">Tên đăng nhập<input v-model="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32" :disabled="busy" required placeholder="Ví dụ: hoa.ngo" /></label>
+      <form id="auth-panel" aria-labelledby="auth-title" class="shell-form" novalidate :aria-busy="busy" @submit.prevent="submit">
+        <label v-if="mode === 'register'" class="shell-field">Tên hiển thị<input id="auth-display-name" v-model="name" autocomplete="name" maxlength="64" :disabled="busy" required placeholder="Tên của bạn" /></label>
+        <label class="shell-field">Tên đăng nhập<input id="auth-username" v-model="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32" :disabled="busy" required placeholder="Ví dụ: hoa.ngo" /></label>
         <PasswordField v-model="password" label="Mật khẩu" :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" :disabled="busy" />
         <PasswordField v-if="mode === 'register'" v-model="confirmation" label="Nhập lại mật khẩu" autocomplete="new-password" :disabled="busy" />
         <p v-if="error" class="shell-error" role="alert">{{ error }}</p><p v-else-if="session.state.expired" class="shell-muted" role="status">Phiên đã hết hạn. Đăng nhập lại để tiếp tục.</p>
         <button type="submit" class="shell-button is-primary shell-full" :disabled="busy">{{ busy ? 'Đang xử lý…' : mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản' }}<AppIcon v-if="!busy" name="arrow" :size="19" /></button>
       </form>
+      <p class="shell-auth-switch">
+        <span>{{ mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?' }}</span>
+        <button type="button" :disabled="busy" @click="switchMode(mode === 'login' ? 'register' : 'login')">{{ mode === 'login' ? 'Tạo tài khoản' : 'Đăng nhập' }}</button>
+      </p>
     </section>
   </main>
 </template>

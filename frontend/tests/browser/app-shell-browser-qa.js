@@ -99,7 +99,7 @@ async page => {
   await page.getByLabel('Mật khẩu',{exact:true}).fill('short');
   await page.getByRole('button',{name:'Đăng nhập',exact:true}).click();
   check(writes.length===0,'Invalid login must not send');
-  await page.getByRole('tab',{name:'Tạo tài khoản'}).click();
+  await page.getByRole('button',{name:'Tạo tài khoản',exact:true}).click();
   await page.getByLabel('Tên hiển thị',{exact:true}).fill('Hòa');
   await page.getByLabel('Tên đăng nhập',{exact:true}).fill('hoa.test');
   await page.getByLabel('Mật khẩu',{exact:true}).fill('testing-123');
