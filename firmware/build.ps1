@@ -2,7 +2,7 @@
 param(
     [string]$Python = 'python',
     [string]$CoreDirectory = (Join-Path $PSScriptRoot '.pio-core'),
-    [ValidateSet('esp32-fake', 'esp32-sensors', 'esp32-pending-sensors', 'esp32-ph-bench')]
+    [ValidateSet('esp32-fake', 'esp32-sensors', 'esp32-pending-sensors', 'esp32-ph-bench', 'esp32-fake-tls', 'esp32-sensors-tls', 'esp32-fake-wss', 'esp32-sensors-wss')]
     [string[]]$Environment = @('esp32-fake', 'esp32-sensors')
 )
 

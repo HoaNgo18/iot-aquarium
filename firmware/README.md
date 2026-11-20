@@ -40,6 +40,19 @@ Wi-Fi dùng mạng 2.4 GHz. Không commit `config.local.h`; file đã được G
 Không có cấu hình local vẫn build được nhưng firmware sẽ dừng ở thông báo `[CONFIG]`.
 Phần thu thập cảm biến/PIR và phím chẩn đoán vẫn chạy khi chưa cấu hình mạng.
 
+`MQTT_TRANSPORT` có ba chế độ:
+
+- `MqttTransport::Tcp`: LAN, mặc định, thường dùng cổng 1883/1884.
+- `MqttTransport::Tls`: VPS, tên DNS và cổng 8883; dùng ISRG Root X1/X2.
+- `MqttTransport::Wss`: Cloudflare Tunnel, `mqtt.dreamer02.id.vn:443`, path `/`;
+  dùng certificate bundle đầy đủ có sẵn của ESP-IDF.
+
+TLS/WSS yêu cầu username đúng bằng `DEVICE_ID`; mật khẩu được tạo bởi
+`deploy/mqtt-user.sh`. Không dùng IP và không bỏ qua xác minh chứng chỉ. Keepalive
+giữ ở 30 giây để thấp hơn thời gian ngắt WebSocket nhàn rỗi của Cloudflare.
+`config.local.h` kiểu cũ chỉ có `MQTT_USE_TLS` vẫn biên dịch được; cấu hình mới nên
+chuyển sang `MQTT_TRANSPORT`.
+
 Tạo `firmware/include/sensors_config.local.h` từ `sensors_config.example.h` để cấu hình đầu dò.
 DS18B20 mặc định bật trên GPIO4; pH/độ đục và PIR/LED mặc định tắt.
 pH đã chốt PH-4502C; độ đục MJKDZ có ngõ analog 0–4.5 V, nhãn VCC/OUT/GND; chưa thử hai kênh analog thật.
@@ -50,6 +63,14 @@ Build từ repository:
 .\.venv-firmware\Scripts\python.exe -m platformio run -d firmware -e esp32-fake -e esp32-sensors
 ```
 
+Kiểm tra thêm nhánh TLS và WSS bằng cấu hình placeholder chỉ để biên dịch (không upload):
+
+```powershell
+.\.venv-firmware\Scripts\python.exe -m platformio run -d firmware -e esp32-fake-tls -e esp32-sensors-tls -e esp32-fake-wss -e esp32-sensors-wss
+```
+
+Các environment `*-tls`/`*-wss` dùng cấu hình build-test; tuyệt đối không nạp chúng lên thiết bị.
+
 Nếu đường dẫn có ký tự tiếng Việt và Xtensa GCC báo không tìm thấy file, dùng:
 
 ```powershell
@@ -59,6 +80,7 @@ Nếu đường dẫn có ký tự tiếng Việt và Xtensa GCC báo không tì
 Script dùng hai ổ đĩa ánh xạ tạm cho source/cache rồi gỡ ánh xạ khi kết thúc;
 không di chuyển hoặc xóa file. Có thể truyền `-CoreDirectory` để dùng cache PlatformIO sẵn có.
 Platform ghim `espressif32@6.9.0`, Arduino core 2.0.17; MQTT dùng ESP-MQTT đi kèm SDK.
+SDK bật certificate bundle đầy đủ, nên WSS không phụ thuộc một CA Cloudflare cụ thể.
 Không cần thư viện JSON/MQTT bên thứ ba. Chế độ sensors ghim OneWire 2.3.8 và DallasTemperature 3.11.0.
 
 Sau khi xác nhận đúng board và cổng COM, mới upload (thay COM5 bằng cổng thật):

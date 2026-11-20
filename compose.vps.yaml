@@ -1,0 +1,111 @@
+x-cert-volumes: &cert-volumes
+  - type: volume
+    source: caddy_data
+    target: /caddy-data
+    read_only: true
+  - type: volume
+    source: mqtt_certs
+    target: /mqtt-certs
+
+services:
+  mqtt:
+    ports:
+      - name: mqtt-tls
+        target: 8883
+        published: "8883"
+        protocol: tcp
+    depends_on:
+      mqtt-cert-init:
+        condition: service_completed_successfully
+    volumes:
+      - type: bind
+        source: ./infrastructure/mosquitto/config/listener.vps.conf
+        target: /mosquitto/config/listeners.d/20-vps-tls.conf
+        read_only: true
+      - type: volume
+        source: mqtt_certs
+        target: /mosquitto/certs
+        read_only: true
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: "${DOMAIN:?Set DOMAIN in .env.prod}"
+      ACME_EMAIL: "${ACME_EMAIL:?Set ACME_EMAIL in .env.prod}"
+      CADDY_TLS_MODE: "${CADDY_TLS_MODE:-}"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - type: bind
+        source: ./infrastructure/caddy
+        target: /etc/caddy
+        read_only: true
+      - type: volume
+        source: caddy_data
+        target: /data
+      - type: volume
+        source: caddy_config
+        target: /config
+    networks: [edge]
+
+  mqtt-cert-init:
+    image: alpine:3.22
+    restart: "no"
+    depends_on:
+      caddy:
+        condition: service_started
+    environment:
+      DOMAIN: "${DOMAIN:?Set DOMAIN in .env.prod}"
+    volumes: *cert-volumes
+    network_mode: none
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        for attempt in $$(seq 1 120); do
+          cert="$$(find /caddy-data/caddy/certificates -type f -path "*/$$DOMAIN/$$DOMAIN.crt" -print -quit 2>/dev/null || true)"
+          key="$$(find /caddy-data/caddy/certificates -type f -path "*/$$DOMAIN/$$DOMAIN.key" -print -quit 2>/dev/null || true)"
+          if [ -n "$$cert" ] && [ -n "$$key" ]; then
+            cp "$$cert" /mqtt-certs/server.crt
+            cp "$$key" /mqtt-certs/server.key
+            chmod 0644 /mqtt-certs/server.crt /mqtt-certs/server.key
+            exit 0
+          fi
+          echo "Waiting for Caddy certificate for $$DOMAIN ($$attempt/120)"
+          sleep 5
+        done
+        echo "Caddy certificate was not available after 10 minutes" >&2
+        exit 1
+
+  mqtt-cert-sync:
+    image: alpine:3.22
+    profiles: ["tools"]
+    restart: "no"
+    environment:
+      DOMAIN: "${DOMAIN:?Set DOMAIN in .env.prod}"
+    volumes: *cert-volumes
+    network_mode: none
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        cert="$$(find /caddy-data/caddy/certificates -type f -path "*/$$DOMAIN/$$DOMAIN.crt" -print -quit)"
+        key="$$(find /caddy-data/caddy/certificates -type f -path "*/$$DOMAIN/$$DOMAIN.key" -print -quit)"
+        test -n "$$cert" && test -n "$$key"
+        if cmp -s "$$cert" /mqtt-certs/server.crt && cmp -s "$$key" /mqtt-certs/server.key; then
+          echo unchanged
+          exit 10
+        fi
+        cp "$$cert" /mqtt-certs/server.crt
+        cp "$$key" /mqtt-certs/server.key
+        chmod 0644 /mqtt-certs/server.crt /mqtt-certs/server.key
+        echo updated
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mqtt_certs:
+

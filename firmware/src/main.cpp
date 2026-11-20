@@ -2,22 +2,46 @@
 #include <WiFi.h>
 #include <atomic>
 #include <ctime>
+#include <esp_crt_bundle.h>
 #include <esp_sntp.h>
 #include <mqtt_client.h>
 #include <aquarium_core.h>
+#include "mqtt_transport.h"
+#include "mqtt_ca.h"
 
-#if __has_include("config.local.h")
+#if defined(AQUARIUM_WSS_BUILD_TEST)
+#include "config.wss-build.h"
+#elif defined(AQUARIUM_TLS_BUILD_TEST)
+#include "config.tls-build.h"
+#elif __has_include("config.local.h")
 #include "config.local.h"
 #else
 #include "config.example.h"
 #endif
 #include "sensors.h"
 
+#if defined(AQUARIUM_CONFIG_HAS_MQTT_TRANSPORT)
+constexpr config::MqttTransport MQTT_TRANSPORT = config::MQTT_TRANSPORT;
+#else
+// Compatibility for existing config.local.h files from task 07.
+constexpr config::MqttTransport MQTT_TRANSPORT =
+    config::MQTT_USE_TLS ? config::MqttTransport::Tls : config::MqttTransport::Tcp;
+#endif
+
 static_assert(config::SAMPLE_INTERVAL_MS >= 1000 && config::SAMPLE_INTERVAL_MS <= 3600000,
               "Sample interval must be 1 second to 1 hour");
 static_assert(config::WIFI_RETRY_MS >= 1000 && config::WIFI_RETRY_MS <= 60000,
               "Wi-Fi retry must be 1 to 60 seconds");
 static_assert(config::MQTT_PORT > 0, "MQTT port must not be zero");
+static_assert(MQTT_TRANSPORT == config::MqttTransport::Tcp ||
+                  (config::MQTT_PORT != 1883 && config::MQTT_PORT != 1884),
+              "MQTT TLS must use a dedicated TLS port such as 8883");
+static_assert(MQTT_TRANSPORT == config::MqttTransport::Tcp || config::MQTT_HOST[0] != '\0',
+              "MQTT TLS/WSS requires a non-empty DNS hostname");
+static_assert(MQTT_TRANSPORT != config::MqttTransport::Wss || config::MQTT_PORT == 443,
+              "Cloudflare Tunnel WSS must use port 443");
+static_assert(config::MQTT_KEEPALIVE_SECONDS > 0 && config::MQTT_KEEPALIVE_SECONDS < 100,
+              "MQTT keepalive must stay below Cloudflare's idle WebSocket timeout");
 static_assert(config::FAKE_SCENARIO <= 6, "Fake scenario must be 0..6");
 
 namespace {
@@ -54,6 +78,9 @@ void mqttEvent(void*, esp_event_base_t, int32_t eventId, void* eventData) {
         case MQTT_EVENT_CONNECTED:
             mqttConnected.store(true);
             Serial.println("[MQTT] connected");
+            if (MQTT_TRANSPORT != config::MqttTransport::Tcp) {
+                Serial.printf("[TLS/WSS] free heap after MQTT connect: %u bytes\n", ESP.getFreeHeap());
+            }
             break;
         case MQTT_EVENT_DISCONNECTED:
             mqttConnected.store(false);
@@ -89,7 +116,22 @@ void startMqtt() {
     esp_mqtt_client_config_t options{};
     options.host = config::MQTT_HOST;
     options.port = config::MQTT_PORT;
-    options.transport = MQTT_TRANSPORT_OVER_TCP;
+    switch (MQTT_TRANSPORT) {
+        case config::MqttTransport::Tls:
+            options.transport = MQTT_TRANSPORT_OVER_SSL;
+            options.cert_pem = MQTT_CA_PEM;
+            break;
+        case config::MqttTransport::Wss:
+            options.transport = MQTT_TRANSPORT_OVER_WSS;
+            options.path = "/";
+            // The full ESP-IDF bundle follows Cloudflare Universal SSL CA changes.
+            options.crt_bundle_attach = arduino_esp_crt_bundle_attach;
+            break;
+        case config::MqttTransport::Tcp:
+        default:
+            options.transport = MQTT_TRANSPORT_OVER_TCP;
+            break;
+    }
     options.client_id = clientId;
     options.username = config::MQTT_USERNAME[0] ? config::MQTT_USERNAME : nullptr;
     options.password = config::MQTT_PASSWORD[0] ? config::MQTT_PASSWORD : nullptr;

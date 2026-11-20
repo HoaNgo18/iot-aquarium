@@ -1,0 +1,9 @@
+user backend
+# Pattern ACLs apply to every user. This explicit deny prevents the reserved
+# backend account from inheriting device write access to devices/backend/*.
+topic deny aquarium-monitoring/devices/backend/#
+topic read aquarium-monitoring/devices/+/telemetry
+topic read aquarium-monitoring/devices/+/status
+
+pattern write aquarium-monitoring/devices/%u/telemetry
+pattern write aquarium-monitoring/devices/%u/status

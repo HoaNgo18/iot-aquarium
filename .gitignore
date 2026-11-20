@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.prod.example
 
 # Machine-specific attachment to existing Docker data volumes
 /compose.override.yaml
@@ -39,6 +40,11 @@ data/
 .playwright-cli/
 output/
 outputs/
+backups/
+
+# Production-generated secrets and certificates
+infrastructure/mosquitto/secrets/
+infrastructure/mosquitto/certs/
 
 # Tài liệu cá nhân (kế hoạch, nhật ký, ghi chép thử nghiệm) chỉ giữ local
 docs/

@@ -1,0 +1,70 @@
+services:
+  mqtt:
+    ports: !reset []
+    environment:
+      MQTT_BACKEND_PASSWORD: "${MQTT_BACKEND_PASSWORD:?Set MQTT_BACKEND_PASSWORD in .env.prod}"
+    volumes: !override
+      - type: bind
+        source: ./infrastructure/mosquitto/config/mosquitto.prod.conf
+        target: /mosquitto/config/mosquitto.conf
+        read_only: true
+      - type: bind
+        source: ./infrastructure/mosquitto/config/listeners.prod.conf
+        target: /mosquitto/config/listeners.d/10-internal.conf
+        read_only: true
+      - type: bind
+        source: ./infrastructure/mosquitto/config/acl.prod
+        target: /mosquitto/config/acl.prod
+        read_only: true
+      - type: bind
+        source: ./infrastructure/mosquitto/secrets/passwd
+        target: /mosquitto/config/passwd
+        read_only: true
+      - type: volume
+        source: mqtt_data
+        target: /mosquitto/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mosquitto_sub -h 127.0.0.1 -p 1883
+          -u backend -P "$$MQTT_BACKEND_PASSWORD"
+          -t 'aquarium-monitoring/devices/+/status'
+          -C 1 -W 1 >/dev/null 2>&1;
+          result=$$?; test $$result -eq 0 -o $$result -eq 27
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+    networks: [core, edge]
+
+  db:
+    ports: !reset []
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-aquasense}"
+      POSTGRES_USER: "${POSTGRES_USER:-aquasense}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}"
+    networks: [core]
+
+  backend:
+    ports: !reset []
+    environment:
+      DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER:-aquasense}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}@db:5432/${POSTGRES_DB:-aquasense}"
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      MQTT_CLIENT_ID: aquarium-monitoring-backend
+      MQTT_USERNAME: backend
+      MQTT_PASSWORD: "${MQTT_BACKEND_PASSWORD:?Set MQTT_BACKEND_PASSWORD in .env.prod}"
+      SECRET_KEY: "${SECRET_KEY:?Set SECRET_KEY in .env.prod}"
+      COOKIE_SECURE: "true"
+    networks: [core]
+
+  frontend:
+    ports: !reset []
+    networks: [core, edge]
+
+networks:
+  core:
+    internal: true
+  edge:
+
