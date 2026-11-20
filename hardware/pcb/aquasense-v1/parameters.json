@@ -1,0 +1,9 @@
+{
+  "row_spacing_mm": 25.4,
+  "pitch_mm": 2.54,
+  "board_width_mm": 80,
+  "board_height_mm": 60,
+  "board_top_mm": 5,
+  "header_x_mm": 35,
+  "header_y_mm": 20
+}

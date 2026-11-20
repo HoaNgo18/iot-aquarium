@@ -1,0 +1,12 @@
+{
+  "aquasense-v1-B_Cu.gbl": "732894ece07ff4fbe0031ff641b787302187cff0728b8ff9cc098a7bc4fe5b41",
+  "aquasense-v1-B_Mask.gbs": "cfae8f3a94fe37f148cd6eebc3c3f3ba5fc827b9006b0c96eaa6141f947cb2a8",
+  "aquasense-v1-B_Silkscreen.gbo": "d4eeddf8aaca4eb95826eb5f90a559c3f3baed9a64efbcbd956eb090deca0e89",
+  "aquasense-v1-Edge_Cuts.gm1": "e09d8624078ea11d6c561115dc95a7a75cce3f9a9fadffe441bd0b92999debe3",
+  "aquasense-v1-F_Cu.gtl": "6d5b0adaa1d5f0196093b18ec3324ed86017b54bd6f94e27a3a0a7ae119eed61",
+  "aquasense-v1-F_Mask.gts": "4cb2d5c477efad8950e738378d962f0088d075289c29d7b1fce82108bd56fac1",
+  "aquasense-v1-F_Silkscreen.gto": "f5c8dd7c51d7967c6330093738d4a5cedb07725b4454278ad4e57f39f197bc3d",
+  "aquasense-v1-NPTH.drl": "1a42a741a63726976f2d1b84285419c5c098f9daaf177ef4a02bda53bed0dd93",
+  "aquasense-v1-PTH.drl": "d2ae0fe845a54b76f0d693f30f8aa6ad1c06137badd98e806aeb61345e6bbcb6",
+  "aquasense-v1-job.gbrjob": "d16c1ef19a92c742e236cf742c6060fb421d7b2d205c272552c0389f1435cf3a"
+}

@@ -1,0 +1,83 @@
+{
+  "critical_gpio_pads": {
+    "GPIO4": "U1.26 / TEMP_DQ",
+    "GPIO34": "U1.4 / PH_ADC",
+    "GPIO35": "U1.5 / TURB_ADC"
+  },
+  "checked_net_assignments": 56,
+  "unconnected_count": 0,
+  "antenna_copper_sample_hits": 0,
+  "antenna_sample_pitch_mm": 0.25,
+  "board_mm": [
+    80,
+    60
+  ],
+  "socket_row_centres_mm": 25.4,
+  "socket_spacing_measured_on_physical_board": "2026-11-18",
+  "xh_connectors": {
+    "J1": {
+      "position_mm": [
+        11.5,
+        38.5
+      ],
+      "orientation_deg": 90,
+      "latch_and_cable_direction": "left / board -X",
+      "front_clearance_to_board_edge_mm": 8.65,
+      "pin_order": [
+        "+3V3",
+        "GND",
+        "TEMP_DQ"
+      ]
+    },
+    "J2": {
+      "position_mm": [
+        11.5,
+        16.0
+      ],
+      "orientation_deg": 90,
+      "latch_and_cable_direction": "left / board -X",
+      "front_clearance_to_board_edge_mm": 8.65,
+      "pin_order": [
+        "PH_OUT",
+        "GND",
+        "GND",
+        "+5V"
+      ]
+    },
+    "J3": {
+      "position_mm": [
+        11.5,
+        27.5
+      ],
+      "orientation_deg": 90,
+      "latch_and_cable_direction": "left / board -X",
+      "front_clearance_to_board_edge_mm": 8.65,
+      "pin_order": [
+        "+5V",
+        "TURB_OUT",
+        "GND"
+      ]
+    },
+    "J4": {
+      "position_mm": [
+        11.5,
+        49.5
+      ],
+      "orientation_deg": 90,
+      "latch_and_cable_direction": "left / board -X",
+      "front_clearance_to_board_edge_mm": 8.65,
+      "pin_order": [
+        "+5V",
+        "PIR_OUT",
+        "GND"
+      ]
+    }
+  },
+  "mounting_hole_to_connector_body_clearance_mm": {
+    "J2_to_H1_mm": 5.15,
+    "J4_to_H3_mm": 6.8
+  },
+  "divider_ph_5v_to_adc_v": 2.5,
+  "divider_clarity_4p5v_to_adc_v": 2.25,
+  "schematic_board_net_names_synchronized": true
+}

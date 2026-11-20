@@ -1,0 +1,1 @@
+(sym_lib_table (lib (name "aquasense")(type "KiCad")(uri "${KIPRJMOD}/aquasense.kicad_sym")(options "")(descr "ESP32 DevKit carrier")))

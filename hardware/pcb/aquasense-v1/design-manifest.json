@@ -1,0 +1,560 @@
+{
+  "parameters": {
+    "row_spacing_mm": 25.4,
+    "pitch_mm": 2.54,
+    "board_width_mm": 80,
+    "board_height_mm": 60,
+    "board_top_mm": 5,
+    "header_x_mm": 35,
+    "header_y_mm": 20
+  },
+  "components": [
+    {
+      "ref": "U1",
+      "value": "ESP32 DevKit V1 30-pin",
+      "symbol": "aquasense:ESP32_DevKit_30",
+      "fp": "aquasense:ESP32_DevKit_30",
+      "nets": {
+        "4": "PH_ADC",
+        "5": "TURB_ADC",
+        "9": "LED_OUT",
+        "10": "PIR_OUT",
+        "14": "GND",
+        "15": "+5V_RAW",
+        "26": "TEMP_DQ",
+        "29": "GND",
+        "30": "+3V3"
+      },
+      "x": 35,
+      "y": 20,
+      "angle": 0,
+      "note": "2 female 1x15 sockets; centres measured 25.4 mm on physical ESP-WROOM-32S DOIT DevKit V1 board on 2026-11-18",
+      "uuid": "bdda8ee0-6582-5816-87c1-5b219a718c7e"
+    },
+    {
+      "ref": "J1",
+      "value": "B3B-XH-A / DS18B20",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "fp": "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical",
+      "nets": {
+        "1": "+3V3",
+        "2": "GND",
+        "3": "TEMP_DQ"
+      },
+      "x": 11.5,
+      "y": 38.5,
+      "angle": 90,
+      "note": "JST-XH 3P; 1=VDD 2=GND 3=DQ; latch faces left",
+      "uuid": "decee051-0eeb-54cc-906a-6bb60087d54f"
+    },
+    {
+      "ref": "J2",
+      "value": "B4B-XH-A / PH-4502C",
+      "symbol": "Connector_Generic:Conn_01x04",
+      "fp": "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical",
+      "nets": {
+        "1": "PH_OUT",
+        "2": "GND",
+        "3": "GND",
+        "4": "+5V"
+      },
+      "x": 11.5,
+      "y": 16,
+      "angle": 90,
+      "note": "JST-XH 4P; matches PH-4502C final four pins PO G G V+; latch faces left",
+      "uuid": "f5119e8c-48e3-56ec-a0ca-a8829f805407"
+    },
+    {
+      "ref": "J3",
+      "value": "B3B-XH-A / MJKDZ clarity",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "fp": "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical",
+      "nets": {
+        "1": "+5V",
+        "2": "TURB_OUT",
+        "3": "GND"
+      },
+      "x": 11.5,
+      "y": 27.5,
+      "angle": 90,
+      "note": "JST-XH 3P; 1=VCC 2=OUT 3=GND; latch faces left",
+      "uuid": "6738312e-edbd-55c4-8394-d050848fbcd4"
+    },
+    {
+      "ref": "J4",
+      "value": "B3B-XH-A / HC-SR501 optional",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "fp": "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical",
+      "nets": {
+        "1": "+5V",
+        "2": "PIR_OUT",
+        "3": "GND"
+      },
+      "x": 11.5,
+      "y": 49.5,
+      "angle": 90,
+      "note": "JST-XH 3P; 1=VCC 2=OUT 3=GND; latch faces left; verify 3.3 V logic",
+      "uuid": "92032edd-8a6d-5641-9e0a-e4ade24a2777"
+    },
+    {
+      "ref": "R1",
+      "value": "4.7k 1%",
+      "symbol": "Device:R",
+      "fp": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "nets": {
+        "1": "+3V3",
+        "2": "TEMP_DQ"
+      },
+      "x": 21,
+      "y": 46,
+      "angle": 0,
+      "note": "",
+      "uuid": "ddbde2de-4383-5a33-bfd1-0f5d430df501"
+    },
+    {
+      "ref": "R2",
+      "value": "10k 1%",
+      "symbol": "Device:R",
+      "fp": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "nets": {
+        "1": "PH_OUT",
+        "2": "PH_ADC"
+      },
+      "x": 21,
+      "y": 21,
+      "angle": 0,
+      "note": "",
+      "uuid": "8016716b-493b-58b4-a067-ac410989787f"
+    },
+    {
+      "ref": "R3",
+      "value": "10k 1%",
+      "symbol": "Device:R",
+      "fp": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "nets": {
+        "1": "PH_ADC",
+        "2": "GND"
+      },
+      "x": 21,
+      "y": 28.5,
+      "angle": 0,
+      "note": "",
+      "uuid": "61199a51-aa69-5abe-8b32-b0ca3a789e27"
+    },
+    {
+      "ref": "R4",
+      "value": "10k 1%",
+      "symbol": "Device:R",
+      "fp": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "nets": {
+        "1": "TURB_OUT",
+        "2": "TURB_ADC"
+      },
+      "x": 21,
+      "y": 37,
+      "angle": 0,
+      "note": "",
+      "uuid": "dd21ee4c-a22a-5840-bbe5-3edc8aeeaaf8"
+    },
+    {
+      "ref": "R5",
+      "value": "10k 1%",
+      "symbol": "Device:R",
+      "fp": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "nets": {
+        "1": "TURB_ADC",
+        "2": "GND"
+      },
+      "x": 21,
+      "y": 42,
+      "angle": 0,
+      "note": "",
+      "uuid": "350f4ddb-798b-54f5-a0ef-14fc5dd43f0f"
+    },
+    {
+      "ref": "R6",
+      "value": "330R 1% optional",
+      "symbol": "Device:R",
+      "fp": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "nets": {
+        "1": "LED_OUT",
+        "2": "LED_A"
+      },
+      "x": 66,
+      "y": 30,
+      "angle": 90,
+      "note": "",
+      "uuid": "a9725bb8-3703-5112-a557-c48512a1a860"
+    },
+    {
+      "ref": "D1",
+      "value": "LED 3mm optional",
+      "symbol": "Device:LED",
+      "fp": "LED_THT:LED_D3.0mm",
+      "nets": {
+        "1": "GND",
+        "2": "LED_A"
+      },
+      "x": 69,
+      "y": 36,
+      "angle": 0,
+      "note": "",
+      "uuid": "dea30a9d-41e3-53c2-9038-85c775f1fe22"
+    },
+    {
+      "ref": "F1",
+      "value": "MF-RHT050 500mA",
+      "symbol": "Device:Polyfuse",
+      "fp": "Fuse:Fuse_Bourns_MF-RHT050",
+      "nets": {
+        "1": "+5V_RAW",
+        "2": "+5V"
+      },
+      "x": 67,
+      "y": 54,
+      "angle": 0,
+      "note": "0.5 A hold; NOT MF-RG500 (5 A)",
+      "uuid": "cf975e36-0cf4-5c7f-af37-0c27b60638cf"
+    },
+    {
+      "ref": "C1",
+      "value": "100uF 16V",
+      "symbol": "Device:C_Polarized",
+      "fp": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
+      "nets": {
+        "1": "+5V",
+        "2": "GND"
+      },
+      "x": 22,
+      "y": 11,
+      "angle": 0,
+      "note": "",
+      "uuid": "97f3b102-a17a-537c-acf1-992fc7b6cd3a"
+    },
+    {
+      "ref": "C2",
+      "value": "100nF",
+      "symbol": "Device:C",
+      "fp": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "nets": {
+        "1": "+5V",
+        "2": "GND"
+      },
+      "x": 26,
+      "y": 17,
+      "angle": 0,
+      "note": "",
+      "uuid": "b52f1681-9c9f-5dd1-af8d-053210fe7c27"
+    },
+    {
+      "ref": "C3",
+      "value": "100nF",
+      "symbol": "Device:C",
+      "fp": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "nets": {
+        "1": "PH_ADC",
+        "2": "GND"
+      },
+      "x": 32,
+      "y": 25.08,
+      "angle": 180,
+      "note": "",
+      "uuid": "7999354c-95fa-5b10-99ed-d3a474bf836a"
+    },
+    {
+      "ref": "C4",
+      "value": "100nF",
+      "symbol": "Device:C",
+      "fp": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "nets": {
+        "1": "TURB_ADC",
+        "2": "GND"
+      },
+      "x": 32,
+      "y": 32.7,
+      "angle": 180,
+      "note": "",
+      "uuid": "a99e3235-239b-5752-b091-031146c2d8bb"
+    },
+    {
+      "ref": "C5",
+      "value": "10uF 16V",
+      "symbol": "Device:C_Polarized",
+      "fp": "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm",
+      "nets": {
+        "1": "+3V3",
+        "2": "GND"
+      },
+      "x": 23,
+      "y": 55,
+      "angle": 0,
+      "note": "",
+      "uuid": "b7d8a22c-5d72-59bf-95b6-8ac188a852d7"
+    },
+    {
+      "ref": "C6",
+      "value": "100nF",
+      "symbol": "Device:C",
+      "fp": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "nets": {
+        "1": "+3V3",
+        "2": "GND"
+      },
+      "x": 27,
+      "y": 61,
+      "angle": 0,
+      "note": "",
+      "uuid": "ea893f62-1fec-5de6-aa29-6d62c20fbf89"
+    },
+    {
+      "ref": "TP1",
+      "value": "+5V",
+      "symbol": "Connector:TestPoint",
+      "fp": "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm",
+      "nets": {
+        "1": "+5V"
+      },
+      "x": 30,
+      "y": 12,
+      "angle": 0,
+      "note": "",
+      "uuid": "10b7f694-c865-5f8a-a401-189e22ba05ab"
+    },
+    {
+      "ref": "TP2",
+      "value": "+3V3",
+      "symbol": "Connector:TestPoint",
+      "fp": "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm",
+      "nets": {
+        "1": "+3V3"
+      },
+      "x": 19,
+      "y": 58,
+      "angle": 0,
+      "note": "",
+      "uuid": "3c18785a-1a84-5996-8e30-8e901c4a3c73"
+    },
+    {
+      "ref": "TP3",
+      "value": "GND",
+      "symbol": "Connector:TestPoint",
+      "fp": "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm",
+      "nets": {
+        "1": "GND"
+      },
+      "x": 19,
+      "y": 62,
+      "angle": 0,
+      "note": "",
+      "uuid": "8246eba2-b9b2-527f-b7ba-17b9c340bf72"
+    },
+    {
+      "ref": "TP4",
+      "value": "PH_ADC",
+      "symbol": "Connector:TestPoint",
+      "fp": "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm",
+      "nets": {
+        "1": "PH_ADC"
+      },
+      "x": 20,
+      "y": 24,
+      "angle": 0,
+      "note": "",
+      "uuid": "45a81e34-28c8-5d07-aa04-794720a1ec70"
+    },
+    {
+      "ref": "TP5",
+      "value": "TURB_ADC",
+      "symbol": "Connector:TestPoint",
+      "fp": "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm",
+      "nets": {
+        "1": "TURB_ADC"
+      },
+      "x": 20,
+      "y": 33,
+      "angle": 0,
+      "note": "",
+      "uuid": "97777d39-86c4-5fba-97e3-0041cd26aa39"
+    },
+    {
+      "ref": "TP6",
+      "value": "TEMP_DQ",
+      "symbol": "Connector:TestPoint",
+      "fp": "TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm",
+      "nets": {
+        "1": "TEMP_DQ"
+      },
+      "x": 20,
+      "y": 51,
+      "angle": 0,
+      "note": "",
+      "uuid": "cd6f411d-834a-54d1-975c-711da24c8767"
+    },
+    {
+      "ref": "H1",
+      "value": "M3",
+      "symbol": "Mechanical:MountingHole",
+      "fp": "MountingHole:MountingHole_3.2mm_M3",
+      "nets": {},
+      "x": 3.5,
+      "y": 8.5,
+      "angle": 0,
+      "note": "",
+      "uuid": "121a5060-ef46-5845-bf7f-d7278cace98d"
+    },
+    {
+      "ref": "H2",
+      "value": "M3",
+      "symbol": "Mechanical:MountingHole",
+      "fp": "MountingHole:MountingHole_3.2mm_M3",
+      "nets": {},
+      "x": 76.5,
+      "y": 8.5,
+      "angle": 0,
+      "note": "",
+      "uuid": "e17dcdcd-8ef3-5378-a72a-b5547e15f7e4"
+    },
+    {
+      "ref": "H3",
+      "value": "M3",
+      "symbol": "Mechanical:MountingHole",
+      "fp": "MountingHole:MountingHole_3.2mm_M3",
+      "nets": {},
+      "x": 3.5,
+      "y": 61.5,
+      "angle": 0,
+      "note": "",
+      "uuid": "55f421be-8dae-559e-92d9-ef60a3d44eeb"
+    },
+    {
+      "ref": "H4",
+      "value": "M3",
+      "symbol": "Mechanical:MountingHole",
+      "fp": "MountingHole:MountingHole_3.2mm_M3",
+      "nets": {},
+      "x": 76.5,
+      "y": 61.5,
+      "angle": 0,
+      "note": "",
+      "uuid": "d5f24854-ce20-52ec-b8a3-90bd3d1c209e"
+    }
+  ],
+  "antenna_keepout": [
+    32,
+    5,
+    64.0,
+    18
+  ],
+  "expected_nets": {
+    "U1": {
+      "4": "PH_ADC",
+      "5": "TURB_ADC",
+      "9": "LED_OUT",
+      "10": "PIR_OUT",
+      "14": "GND",
+      "15": "+5V_RAW",
+      "26": "TEMP_DQ",
+      "29": "GND",
+      "30": "+3V3"
+    },
+    "J1": {
+      "1": "+3V3",
+      "2": "GND",
+      "3": "TEMP_DQ"
+    },
+    "J2": {
+      "1": "PH_OUT",
+      "2": "GND",
+      "3": "GND",
+      "4": "+5V"
+    },
+    "J3": {
+      "1": "+5V",
+      "2": "TURB_OUT",
+      "3": "GND"
+    },
+    "J4": {
+      "1": "+5V",
+      "2": "PIR_OUT",
+      "3": "GND"
+    },
+    "R1": {
+      "1": "+3V3",
+      "2": "TEMP_DQ"
+    },
+    "R2": {
+      "1": "PH_OUT",
+      "2": "PH_ADC"
+    },
+    "R3": {
+      "1": "PH_ADC",
+      "2": "GND"
+    },
+    "R4": {
+      "1": "TURB_OUT",
+      "2": "TURB_ADC"
+    },
+    "R5": {
+      "1": "TURB_ADC",
+      "2": "GND"
+    },
+    "R6": {
+      "1": "LED_OUT",
+      "2": "LED_A"
+    },
+    "D1": {
+      "1": "GND",
+      "2": "LED_A"
+    },
+    "F1": {
+      "1": "+5V_RAW",
+      "2": "+5V"
+    },
+    "C1": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "C2": {
+      "1": "+5V",
+      "2": "GND"
+    },
+    "C3": {
+      "1": "PH_ADC",
+      "2": "GND"
+    },
+    "C4": {
+      "1": "TURB_ADC",
+      "2": "GND"
+    },
+    "C5": {
+      "1": "+3V3",
+      "2": "GND"
+    },
+    "C6": {
+      "1": "+3V3",
+      "2": "GND"
+    },
+    "TP1": {
+      "1": "+5V"
+    },
+    "TP2": {
+      "1": "+3V3"
+    },
+    "TP3": {
+      "1": "GND"
+    },
+    "TP4": {
+      "1": "PH_ADC"
+    },
+    "TP5": {
+      "1": "TURB_ADC"
+    },
+    "TP6": {
+      "1": "TEMP_DQ"
+    },
+    "H1": {},
+    "H2": {},
+    "H3": {},
+    "H4": {}
+  }
+}

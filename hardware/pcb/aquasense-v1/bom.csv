@@ -1,0 +1,30 @@
+﻿Ref,Value,Footprint,Qty,Ghi chú
+U1,2x female socket 1x15 2.54mm (one set),aquasense:ESP32_DevKit_30,1,2 female 1x15 sockets; centres measured 25.4 mm on physical ESP-WROOM-32S DOIT DevKit V1 board on 2026-11-18; buy 2 sockets; ESP32 module supplied separately
+J1,B3B-XH-A / DS18B20,Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical,1,JST-XH 3P; 1=VDD 2=GND 3=DQ; latch faces left
+J2,B4B-XH-A / PH-4502C,Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical,1,JST-XH 4P; matches PH-4502C final four pins PO G G V+; latch faces left
+J3,B3B-XH-A / MJKDZ clarity,Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical,1,JST-XH 3P; 1=VCC 2=OUT 3=GND; latch faces left
+J4,B3B-XH-A / HC-SR501 optional,Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical,1,JST-XH 3P; 1=VCC 2=OUT 3=GND; latch faces left; verify 3.3 V logic
+R1,4.7k 1%,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,
+R2,10k 1%,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,
+R3,10k 1%,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,
+R4,10k 1%,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,
+R5,10k 1%,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,
+R6,330R 1% optional,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,1,
+D1,LED 3mm optional,LED_THT:LED_D3.0mm,1,
+F1,MF-RHT050 500mA,Fuse:Fuse_Bourns_MF-RHT050,1,0.5 A hold; NOT MF-RG500 (5 A)
+C1,100uF 16V,Capacitor_THT:CP_Radial_D6.3mm_P2.50mm,1,
+C2,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,1,
+C3,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,1,
+C4,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,1,
+C5,10uF 16V,Capacitor_THT:CP_Radial_D5.0mm_P2.00mm,1,
+C6,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,1,
+TP1,+5V,TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm,1,
+TP2,+3V3,TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm,1,
+TP3,GND,TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm,1,
+TP4,PH_ADC,TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm,1,
+TP5,TURB_ADC,TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm,1,
+TP6,TEMP_DQ,TestPoint:TestPoint_THTPad_D2.0mm_Drill1.0mm,1,
+H1,M3,MountingHole:MountingHole_3.2mm_M3,1,
+H2,M3,MountingHole:MountingHole_3.2mm_M3,1,
+H3,M3,MountingHole:MountingHole_3.2mm_M3,1,
+H4,M3,MountingHole:MountingHole_3.2mm_M3,1,
