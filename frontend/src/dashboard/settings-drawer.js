@@ -26,8 +26,23 @@ export function mountSettingsDrawer(root, options) {
           <section id="settings-panel-ph" role="tabpanel" aria-labelledby="settings-tab-ph" hidden><h3>Độ pH</h3><div class="settings-pair">${field('ph_min', 'Tối thiểu', 0, 14)}${field('ph_max', 'Tối đa', 0, 14)}</div></section>
           <section id="settings-panel-clarity" role="tabpanel" aria-labelledby="settings-tab-clarity" hidden>
             <h3>Độ trong của nước</h3>
-            <div class="settings-baseline"><span>Mốc nước sạch</span><strong id="settings-baseline-value">Chưa có mốc</strong><span id="settings-baseline-time"></span><button type="button" class="button button--secondary" id="settings-reset-baseline">Đặt lại mốc nước sạch</button></div>
-            <p class="settings-hint">Mốc được lưu ngay sau khi xác nhận.</p>
+            <div class="settings-baseline">
+              <span>Mốc nước sạch</span><strong id="settings-baseline-value">Chưa có mốc</strong><span id="settings-baseline-time"></span>
+              <p class="settings-hint">Ngâm đầu dò trong nước sạch, tránh bọt khí và giữ yên 1–2 phút trước khi lưu.</p>
+              <dl class="settings-readings">
+                <div><dt>Điện áp đầu dò hiện tại</dt><dd id="settings-probe-voltage">—</dd></div>
+                <div><dt>Mốc dự phòng firmware</dt><dd id="settings-firmware-reference">—</dd></div>
+              </dl>
+              <button type="button" class="button button--secondary" id="settings-reset-baseline">Đặt mốc nước sạch</button>
+            </div>
+            <p class="settings-hint">Mốc được lưu ngay sau khi xác nhận và chỉ áp dụng cho các mẫu mới.</p>
+            <details class="settings-technical"><summary>Thông tin kỹ thuật</summary>
+              <dl class="settings-readings">
+                <div><dt>Điện áp pH thô</dt><dd id="settings-ph-voltage">—</dd></div>
+                <div><dt>Điện áp độ đục thô</dt><dd id="settings-turbidity-voltage">—</dd></div>
+                <div><dt>Điện áp độ đục sau lọc</dt><dd id="settings-filtered-voltage">—</dd></div>
+              </dl>
+            </details>
             ${field('clear_min_pct', '<span id="clear-slider-label">Ngưỡng Hơi đục</span>', 1, 99, '', 1, 'range')}
             ${field('cloudy_below_pct', '<span id="cloudy-slider-label">Ngưỡng Đục</span>', 0, 98, '', 1, 'range')}
             <p class="settings-hint">Kéo thanh trượt để xem trước dải màu trên biểu đồ. Bấm Lưu để áp dụng.</p>
@@ -101,9 +116,15 @@ export function mountSettingsDrawer(root, options) {
       $('#settings-filter-summary').textContent = `${draft.sensitivity === 'custom' ? 'Tùy chỉnh · ' : ''}Trung vị ${draft.median_window} mẫu · EMA ${draft.ema_seconds} giây`;
     }
     const baseline = current.baselines?.[0];
-    const mv = baseline?.reference_mv ?? current.latest?.turbidityReference;
-    $('#settings-baseline-value').textContent = Number.isFinite(mv) ? `${mv.toFixed(1).replace('.', ',')} mV` : 'Chưa có mốc';
-    $('#settings-baseline-time').textContent = baseline ? `Đặt lúc ${new Date(baseline.created_at).toLocaleString('vi-VN')}` : 'Mốc mặc định';
+    const formatMv = value => Number.isFinite(value) ? `${value.toFixed(1).replace('.', ',')} mV` : 'Chưa có mẫu';
+    $('#settings-baseline-value').textContent = baseline && Number.isFinite(baseline.reference_mv) ? formatMv(baseline.reference_mv) : 'Chưa có mốc đã lưu';
+    $('#settings-baseline-time').textContent = baseline ? `Đặt lúc ${new Date(baseline.created_at).toLocaleString('vi-VN')}` : 'Hãy đặt mốc trước khi dùng phần trăm độ trong.';
+    $('#settings-probe-voltage').textContent = formatMv(current.latest?.turbidityVoltage);
+    $('#settings-firmware-reference').textContent = formatMv(current.latest?.turbidityReference);
+    $('#settings-ph-voltage').textContent = formatMv(current.latest?.phVoltage);
+    $('#settings-turbidity-voltage').textContent = formatMv(current.latest?.turbidityVoltage);
+    $('#settings-filtered-voltage').textContent = formatMv(current.latest?.clarityMv);
+    $('#settings-reset-baseline').textContent = baseline ? 'Đặt lại mốc nước sạch' : 'Đặt mốc nước sạch';
     $('#settings-reset-baseline').disabled = locked || !current.canSetBaseline;
     const changedClarity = document && draft && tabFields.clarity.some(key => draft[key] !== document.values[key]);
     if (drawer.open && draft && !$('#settings-panel-clarity').hidden) {
@@ -145,7 +166,8 @@ export function mountSettingsDrawer(root, options) {
     } catch (error) { if (id === deviceId && generation === loadGeneration) $('#settings-history-content').textContent = `Không tải được lịch sử. ${error.message}`; }
   }
   function setBusy(value) { busy = value; options.onBusy(value); render(); }
-  listen($('#open-settings'), 'click', async () => {
+  async function open(key = 'temperature') {
+    selectTab(key);
     drawer.showModal(); root.ownerDocument.body.classList.add('settings-open'); render();
     if (!document) {
       const id = options.getDeviceId(), generation = ++requestGeneration;
@@ -154,7 +176,8 @@ export function mountSettingsDrawer(root, options) {
       catch (error) { if (id === deviceId) $('#settings-status').textContent = error.message; }
     }
     await loadHistory();
-  });
+  }
+  listen($('#open-settings'), 'click', () => open());
   listen($('#settings-close'), 'click', () => drawer.close());
   listen(drawer, 'cancel', event => { if (busy || options.getCurrent().baselineSaving) event.preventDefault(); });
   listen(drawer, 'close', () => { root.ownerDocument.body.classList.remove('settings-open'); options.onPreview(null); });
@@ -210,7 +233,7 @@ export function mountSettingsDrawer(root, options) {
   listen($('#settings-reset-baseline'), 'click', () => options.onBaseline());
   listen($('#settings-history-retry'), 'click', loadHistory);
   listen(root.ownerDocument.defaultView, 'resize', render);
-  return { accept, dirty, refreshHistory: () => drawer.open ? loadHistory() : Promise.resolve(),
+  return { accept, dirty, openClarity: () => open('clarity'), refreshHistory: () => drawer.open ? loadHistory() : Promise.resolve(),
     setBaselineStatus: message => { $('#settings-status').textContent = message; },
     dispose() { lifetime.abort(); loadGeneration++; requestGeneration++; drawer.remove(); root.ownerDocument.body.classList.remove('settings-open'); } };
 }

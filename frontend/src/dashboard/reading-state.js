@@ -25,6 +25,21 @@ export function elapsedLabel(time, now = Date.now()) {
   return `${Math.floor(minutes / 60)} giờ${minutes % 60 ? ` ${minutes % 60} phút` : ''}`;
 }
 
-export function sensorConnectionBadge(kind) {
-  return kind === 'live' ? 'Đang hoạt động' : kind === 'stale' ? 'Mất kết nối' : 'Chưa kết nối';
+export const METRIC_CARD_STATUSES = {
+  normal: { label: 'Bình thường', tone: 'normal' },
+  attention: { label: 'Cần chú ý', tone: 'warning' },
+  offline: { label: 'Mất kết nối', tone: 'neutral' },
+  error: { label: 'Lỗi cảm biến', tone: 'danger' },
+  uncalibrated: { label: 'Chưa hiệu chỉnh', tone: 'uncalibrated' },
+};
+
+// Status priority is shared by all metric cards so their badges always mean the
+// same thing to the user. A current sensor fault is more actionable than a
+// missing calibration; an old sample is treated as a connection problem.
+export function metricCardStatus({ readingKind, sensorHealthy = true, calibrated = true, thresholdStatus = 'normal' }) {
+  if (readingKind !== 'live') return METRIC_CARD_STATUSES.offline;
+  if (sensorHealthy === false) return METRIC_CARD_STATUSES.error;
+  if (!calibrated) return METRIC_CARD_STATUSES.uncalibrated;
+  if (thresholdStatus !== 'normal') return METRIC_CARD_STATUSES.attention;
+  return METRIC_CARD_STATUSES.normal;
 }

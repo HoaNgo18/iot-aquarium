@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lastKnownReading, readingState, elapsedLabel, phReading } from '../src/dashboard/reading-state.js';
+import { lastKnownReading, readingState, elapsedLabel, phReading, metricCardStatus } from '../src/dashboard/reading-state.js';
 import { compressedTimeline } from '../src/dashboard/chart-layout.js';
 test('disconnect preserves the last valid reading, never becomes a live reading', () => {
   const now = Date.now(), row = { time: new Date(now - 7200000), clarity: 84, clarityState: 'slight' };
@@ -24,7 +24,6 @@ test('chart leaves an explicit trailing no-data interval without adding measurem
   assert.equal(result.position(new Date(50000)), result.span);
 });
 
-import {sensorConnectionBadge} from '../src/dashboard/reading-state.js';
 test('sensor health overrides numeric values for all sensor cards',()=>{
  const now=Date.now(),time=new Date(now),latest={time,temperature:27,ph:7,phVoltage:1250,clarity:90,sensorHealth:{temperature:false,ph:false,clarity:false}},known={...latest,time:new Date(now-120000),sensorHealth:{temperature:true,ph:true,clarity:true}};
  for(const metric of ['temperature','ph','phVoltage','clarity']){
@@ -32,5 +31,19 @@ test('sensor health overrides numeric values for all sensor cards',()=>{
   assert.equal(lastKnownReading(metric,[latest,known]),known);
  }
  assert.equal(phReading([latest,known]).row,known);
- assert.equal(sensorConnectionBadge('live'),'Đang hoạt động');assert.equal(sensorConnectionBadge('stale'),'Mất kết nối');assert.equal(sensorConnectionBadge('never'),'Chưa kết nối');
+});
+
+test('all metric cards use the same five user-facing statuses', () => {
+  const cases = [
+    [{ readingKind: 'live', sensorHealthy: true, calibrated: true, thresholdStatus: 'normal' }, 'Bình thường'],
+    [{ readingKind: 'live', sensorHealthy: true, calibrated: true, thresholdStatus: 'warning' }, 'Cần chú ý'],
+    [{ readingKind: 'stale', sensorHealthy: true, calibrated: true, thresholdStatus: 'normal' }, 'Mất kết nối'],
+    [{ readingKind: 'live', sensorHealthy: false, calibrated: true, thresholdStatus: 'normal' }, 'Lỗi cảm biến'],
+    [{ readingKind: 'live', sensorHealthy: true, calibrated: false, thresholdStatus: 'normal' }, 'Chưa hiệu chỉnh'],
+  ];
+  for (const metric of ['temperature', 'ph', 'clarity']) {
+    for (const [input, expected] of cases) {
+      assert.equal(metricCardStatus({ metric, ...input }).label, expected, `${metric}: ${expected}`);
+    }
+  }
 });

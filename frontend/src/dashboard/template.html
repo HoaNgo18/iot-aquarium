@@ -47,9 +47,9 @@
               <span class="metric-icon metric-icon--temperature" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M14 14.8V5a4 4 0 0 0-8 0v9.8a6 6 0 1 0 8 0ZM10 6v10" /></svg>
               </span>
+              <p class="kpi-card__label">Nhiệt độ nước</p>
               <span class="status-badge status-badge--normal">✓ Bình thường</span>
             </div>
-            <p class="kpi-card__label">Nhiệt độ nước</p>
             <p class="missing-reason" data-missing-reason hidden></p>
             <div class="kpi-card__reading">
             <div class="kpi-card__value"><span data-value>--</span><small>°C</small></div>
@@ -63,14 +63,12 @@
           <article class="kpi-card" id="ph-card" data-status="normal">
             <div class="kpi-card__head">
               <span class="metric-icon metric-icon--ph" aria-hidden="true">pH</span>
+              <p class="kpi-card__label">Độ pH</p>
               <span class="status-badge status-badge--normal">✓ Bình thường</span>
             </div>
-            <p class="kpi-card__label">Độ pH</p>
             <p class="missing-reason" data-missing-reason hidden></p>
             <div class="kpi-card__reading">
-            <p class="ph-pending" data-ph-pending hidden>Chưa hiệu chuẩn, chưa có số pH</p>
             <div class="kpi-card__value"><span data-value>--</span><small data-ph-unit></small></div>
-            <p class="ph-signal-note" data-ph-note hidden></p>
             </div>
             <div class="kpi-card__footer">
               <span class="trend" data-trend>— Đang chờ dữ liệu</span>
@@ -83,35 +81,16 @@
               <span class="metric-icon metric-icon--turbidity" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 3s6 6.4 6 11a6 6 0 1 1-12 0c0-4.6 6-11 6-11Z" /></svg>
               </span>
+              <p class="kpi-card__label">Độ trong của nước</p>
               <span class="status-badge status-badge--normal">✓ Bình thường</span>
             </div>
-            <p class="kpi-card__label">Độ trong của nước</p>
             <div class="kpi-card__reading">
             <div class="kpi-card__value"><span data-value>--</span><small>%</small></div>
             </div>
-            <span id="clarity-tooltip" role="tooltip" hidden>Đây là chỉ số độ trong tương đối từ cảm biến, chưa quy đổi ra NTU và không đủ để kết luận nước an toàn cho cá.</span>
             <div class="kpi-card__footer">
               <span class="trend" data-trend>— Đang chờ dữ liệu</span>
+              <button type="button" class="metric-calibration-link" data-calibrate-clarity hidden>Hiệu chỉnh ngay</button>
               <canvas class="sparkline" aria-hidden="true"></canvas>
-            </div>
-            <p class="clarity-warning" data-clarity-warning hidden>Tín hiệu vượt mốc bất thường. Kiểm tra cảm biến hoặc đặt lại mốc nước sạch.</p>
-            <div data-clarity-controls hidden>
-              <span id="clarity-baseline-note" class="clarity-chart-caption">Chưa đặt mốc nước sạch</span>
-              <div class="clarity-actions">
-                <span class="baseline-control" data-baseline-control tabindex="0"><button type="button" class="button button--secondary" id="set-clean-reference">Đặt mốc nước sạch</button></span>
-                <button type="button" id="clarity-details-toggle" aria-expanded="false" aria-controls="clarity-details">Chi tiết kỹ thuật</button>
-              </div>
-            </div>
-            <div id="clarity-details" data-probe-details hidden>
-              <table><tbody>
-                <tr><th>Chân cảm biến</th><td>GPIO35</td></tr>
-                <tr><th>Điện áp hiện tại</th><td data-probe-voltage></td></tr>
-                <tr><th>Điện áp sau lọc</th><td id="clarity-filtered-voltage"></td></tr>
-                <tr><th>Mốc nước sạch</th><td id="clarity-reference-time"></td></tr>
-                <tr><th>Độ trong tương đối</th><td><span id="clarity-detail-value"></span><br>= điện áp lọc / mốc × 100; &gt;100% nghĩa là tín hiệu vượt mốc</td></tr>
-                <tr><th>Lọc</th><td id="clarity-filter-details">Trung vị 15 mẫu, EMA 20 giây</td></tr>
-                <tr><th>Ngưỡng</th><td id="clarity-detail-rules"></td></tr>
-              </tbody></table>
             </div>
             <dialog id="clarity-confirm" aria-labelledby="clarity-confirm-title" aria-describedby="clarity-confirm-hint">
               <p id="clarity-confirm-title">Bạn vừa thay nước?</p>

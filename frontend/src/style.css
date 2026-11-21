@@ -206,9 +206,6 @@ h2 { margin-bottom: 0; font-size: 18px; line-height: 1.3; letter-spacing: -.015e
 .clarity-card .status-badge { cursor: help; font-size: 12px; padding: 4px; }
 .clarity-card .kpi-card__value { margin-top: 14px; }
 .clarity-card .kpi-card__value small { color: var(--text-muted); font-size: 14px; }
-.clarity-card .kpi-card__footer { display: grid; margin-top: 2px; }
-.clarity-card .trend { max-width: none; white-space: normal; line-height: 1.6; font-size: 12px; }
-.clarity-card .sparkline { width: 100%; height: 58px; }
 .clarity-chart-caption { color: var(--text-muted); font-size: 12px; }
 .clarity-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .clarity-actions .button { min-height: 30px; padding: 5px 8px; font-size: 12px; }
@@ -225,7 +222,6 @@ h2 { margin-bottom: 0; font-size: 18px; line-height: 1.3; letter-spacing: -.015e
 .clarity-card [role="button"]:focus-visible, #clarity-details-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .clarity-card [data-probe-details] { margin-top: 12px; font-size: 12px; }
 .clarity-card .field-hint { font-size: 12px; line-height: 1.5; }
-.clarity-card .kpi-card__footer { flex-wrap: wrap; gap: 8px; }
 [data-clarity-controls][hidden], [data-probe-details][hidden], [data-signal-explanation][hidden] { display: none !important; }
 #legacy-turbidity-thresholds[hidden], #clarity-rules[hidden] { display: none !important; }
 .metric-icon--device { color: var(--accent); background: var(--accent-soft); }
@@ -418,6 +414,14 @@ html:has(.settings-drawer[open]) { overflow: hidden; }
 .settings-baseline > span { color: var(--text-secondary); }
 .settings-baseline strong { font-size: 22px; font-variant-numeric: tabular-nums; }
 .settings-baseline .button { margin-top: 4px; font-size: 13px; }
+.settings-baseline .settings-hint { margin: 0; }
+.settings-readings { width: 100%; margin: 4px 0; display: grid; gap: 8px; }
+.settings-readings div { display: flex; justify-content: space-between; gap: 16px; padding-top: 8px; border-top: 1px solid var(--border); }
+.settings-readings dt { color: var(--text-muted); }
+.settings-readings dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
+.settings-technical { margin: 0 0 20px; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.settings-technical summary { color: var(--text-secondary); cursor: pointer; font-weight: 600; }
+.settings-technical[open] summary { margin-bottom: 8px; }
 .settings-chart-preview { display: grid; gap: 8px; margin: 16px 0; color: var(--text-muted); font-size: 12px; }
 #settings-clarity-preview { width: 100%; height: 72px; display: block; }
 .settings-advanced, .settings-history { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 22px; }
@@ -578,6 +582,9 @@ html:has(.settings-drawer[open]) { overflow: hidden; }
 .is-stale .kpi-card__value { opacity: .85; }
 .is-stale .trend { color: var(--text-soft); }
 .clarity-card .status-badge--neutral { color: var(--text-soft); background: var(--chip-bg); }
+.metric-calibration-link { flex: 0 0 auto; margin-left: -6px; margin-right: auto; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.metric-calibration-link:hover { color: var(--accent-strong); }
+.metric-calibration-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 .chart-note, .chart-gaps { font-size: 13px; color: var(--text-soft); }
 .chart-legend { color: var(--text-soft); }
 .clarity-actions .button, .alert-item [data-ack] { border-color: var(--control-border); color: var(--text); }
@@ -608,3 +615,4 @@ html:has(.settings-drawer[open]) { overflow: hidden; }
 .is-embedded .brand, .is-embedded .device-select, .is-embedded #add-device, .is-embedded .skip-link { display: none !important; }
 .is-embedded .topbar { position: static; justify-content: flex-end; }
 
+.kpi-grid .kpi-card__footer:has(.metric-calibration-link:not([hidden])) .trend { flex: 0 1 auto; }

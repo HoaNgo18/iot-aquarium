@@ -1,8 +1,8 @@
 import { snapshot, request as apiRequest, metricStatus } from './api.js';
-import { durationLabel, clarityRuleText, sensorSummary, clarityPresentation, temperaturePresentation, CLARITY_DISPLAY_MAX_PCT } from './presentation.js';
+import { durationLabel, clarityRuleText, sensorSummary, CLARITY_DISPLAY_MAX_PCT } from './presentation.js';
 import { mountSettingsDrawer } from './settings-drawer.js';
 import { clarityScale, compressedTimeline } from './chart-layout.js';
-import { lastKnownReading, readingState, elapsedLabel, phReading, sensorConnectionBadge } from './reading-state.js';
+import { lastKnownReading, readingState, phReading, metricCardStatus } from './reading-state.js';
 import { toLocalInput, presetRange, exportRange, downloadCsv, saveBlob } from './export-csv.js';
 
 export function mountDashboard(root, onDeviceChange, realtimeLabel, options = {}) {
@@ -125,13 +125,8 @@ function drawSparkline(canvas, values, color) {
 
 function updateKpis() {
   const profile = profileForDevice();
-  const historicalCaption = row => {
-    const measured = new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit',
-      ...(Date.now() - row.time >= 86400000 ? { day: '2-digit', month: '2-digit' } : {}), hour12: false }).format(row.time);
-    const offline = state.alerts.find(alert => alert.alert_type === 'offline' && !alert.ended_at);
-    const since = profile.online ? row.time : new Date(offline?.started_at ?? state.device?.last_seen_at ?? row.time);
-    return `Giá trị lúc ${measured} · ${profile.online ? 'mất tín hiệu' : 'mất kết nối'} ${elapsedLabel(since)}`;
-  };
+  const number = value => String(value).replace('.', ',');
+  const freshSample = profile.online && state.latest && Date.now() - state.latest.time < 60000 && state.latest.time - Date.now() < 30000;
   ['temperature', 'ph', 'clarity'].forEach(metric => {
     const card = $(`#${metric === 'clarity' ? 'turbidity' : metric}-card`);
     const candidates = [state.lastValid[metric], state.latest, ...state.data, ...state.clarityHistory];
@@ -140,84 +135,54 @@ function updateKpis() {
     const known = ph?.row ?? lastKnownReading(metric, candidates);
     const display = readingState(displayMetric, state.latest, known, profile.online);
     const row = display.row, value = row?.[displayMetric], config = METRICS[displayMetric];
-    const status = display.kind === 'live' ? evaluateMetric(displayMetric, value) : 'neutral';
-    card.dataset.status = status;
+    const healthKey = metric === 'ph' ? 'ph' : metric;
+    const sensorHealthy = !freshSample || state.latest.sensorHealth?.[healthKey] !== false && Number.isFinite(state.latest[displayMetric]);
+    const calibrated = metric === 'clarity' ? state.baselines.length > 0 : metric !== 'ph' || displayMetric === 'ph';
+    const thresholdStatus = metric === 'clarity'
+      ? Number.isFinite(value) && row?.clarityState === 'clear' && value <= CLARITY_DISPLAY_MAX_PCT ? 'normal' : 'warning'
+      : Number.isFinite(value) ? evaluateMetric(metric, value) : 'outside';
+    const status = metricCardStatus({ readingKind: freshSample ? 'live' : display.kind, sensorHealthy, calibrated, thresholdStatus });
+    card.dataset.status = status.tone;
     card.dataset.readingState = display.kind;
-    card.classList.toggle('is-stale', display.kind === 'stale');
-    $('[data-value]', card).textContent = value == null ? '--' : value.toFixed(config.decimals).replace('.', ',');
+    card.classList.toggle('is-stale', status.label === 'Mất kết nối');
+    card.classList.toggle('is-uncalibrated', status.label === 'Chưa hiệu chỉnh');
     const badge = $('.status-badge', card);
-    badge.className = `status-badge status-badge--${status}`;
-    badge.textContent = display.kind === 'stale' ? 'Giá trị cuối' : statusLabel(status);
+    badge.className = `status-badge status-badge--${status.tone}`;
+    badge.textContent = status.label;
     const trend = $('[data-trend]', card);
     trend.className = 'trend';
-    trend.textContent = display.kind === 'stale' ? historicalCaption(row) : 'Hoạt động';
-    if (metric !== 'clarity') {
-      const empty = display.kind === 'never';
-      card.classList.toggle('is-empty', empty);
-      const reason = $('[data-missing-reason]', card);
-      reason.hidden = !empty;
-      reason.textContent = 'Chưa có cảm biến';
-      reason.title = 'Chưa từng nhận được số đo hợp lệ từ cảm biến này.';
-      badge.textContent = display.kind === 'stale' ? 'Giá trị cuối' : status === 'normal' ? 'Hoạt động' : statusLabel(status);
-      if (metric === 'temperature' && display.kind === 'live') {
-        const text = temperaturePresentation(value, getThresholds());
-        badge.textContent = text.badge;
-        trend.textContent = `${text.note} · cập nhật ${vnTime(row.time)}`;
-      }
-      if (metric === 'ph') {
-        const raw = displayMetric === 'phVoltage' && row;
-        $('.kpi-card__label', card).textContent = 'Độ pH';
-        card.classList.toggle('is-uncalibrated', Boolean(raw));
-        $('[data-ph-pending]', card).hidden = !raw;
-        $('[data-ph-unit]', card).textContent = raw ? 'mV' : '';
-        $('[data-ph-note]', card).hidden = !raw;
-        $('[data-ph-note]', card).textContent = raw ? 'Điện áp GPIO34 · chưa phải số pH' : '';
-        if (raw) {
-          badge.textContent = 'Chưa hiệu chuẩn';
-          badge.className = 'status-badge status-badge--uncalibrated';
-          if (display.kind === 'live') trend.textContent = `Đã nhận tín hiệu · cập nhật ${vnTime(row.time)}`;
-        }
-      }
-      drawSparkline($('.sparkline', card), state.data.slice(-22).map(item => item[displayMetric]), config.color);
-    }
-    if (metric === 'clarity') {
-      $('.kpi-card__label', card).textContent = 'Độ trong của nước';
-      card.classList.add('clarity-card');
-      $('[data-probe-details]', card).hidden = $('#clarity-details-toggle').getAttribute('aria-expanded') !== 'true';
-      $('[data-clarity-controls]', card).hidden = false;
-      const text = clarityPresentation(row);
-      card.classList.toggle('is-outside', text.outside);
-      $('[data-value]', card).textContent = text.label;
-      $('[data-value]', card).dataset.clarity = text.state;
-      $('.kpi-card__value small', card).textContent = row && !text.outside ? `${value.toFixed(0)}%` : '';
-      badge.className = 'status-badge status-badge--uncalibrated'; badge.textContent = 'Chưa hiệu chuẩn';
-      if (display.kind === 'live') trend.textContent = `${text.note} · cập nhật ${vnTime(row.time)}`;
-      $('[data-clarity-warning]', card).hidden = !text.outside;
-      drawSparkline($('.sparkline', card), state.data.slice(-22).map(item => item.clarity), text.outside ? '#aebdcb' : config.color);
-      if (display.kind === 'never') trend.textContent = 'Chưa nhận được tín hiệu cảm biến';
-      $('[data-probe-voltage]', card).textContent = Number.isFinite(row?.turbidityVoltage) ? `${row.turbidityVoltage.toFixed(1).replace('.', ',')} mV` : 'Chưa có mẫu';
-      $('#clarity-filtered-voltage').textContent = Number.isFinite(row?.clarityMv) ? `${row.clarityMv.toFixed(1).replace('.', ',')} mV` : 'Chưa có mẫu';
-      $('#clarity-detail-value').textContent = row ? `${value.toFixed(0)}%` : '—';
-      $('#clarity-reference-time').textContent = Number.isFinite(row?.turbidityReference) ? `${row.turbidityReference.toFixed(1).replace('.', ',')} mV · ${row.clarityBaselineAt ? `đặt lúc ${new Date(row.clarityBaselineAt).toLocaleString('vi-VN')}` : 'mốc mặc định'}` : 'Chưa có mốc';
-      const rules = clarityRuleText(state.clarityConfig);
-      $('#clarity-detail-rules').textContent = `${rules.zones}. ${rules.recovery}`;
-      $('#clarity-filter-details').textContent = `Trung vị ${state.settings?.values.median_window ?? 15} mẫu, EMA ${state.settings?.values.ema_seconds ?? 20} giây`;
-      const freshMv = display.kind === 'live' && profile.online && state.latest && Date.now() - state.latest.time < 60000 && Number.isFinite(state.latest.turbidityVoltage);
-      const reason = state.baselineSaving ? 'Đang lưu mốc nước sạch' : !profile.online ? 'Thiết bị mất kết nối. Cần mẫu mới để đặt mốc nước sạch.' : !freshMv ? 'Chờ số đo độ trong hợp lệ mới để đặt mốc.' : '';
-      $('#set-clean-reference').disabled = Boolean(reason);
-      $('[data-baseline-control]', card).title = reason || 'Đặt mốc từ nước sạch hiện tại';
-      $('[data-baseline-control]', card).setAttribute('aria-label', reason || 'Đặt mốc nước sạch');
-      const baseline = state.baselines[0];
-      $('#clarity-baseline-note').textContent = text.outside ? 'Đặt mốc khi nước trong và tín hiệu ổn định'
-        : baseline ? `Mốc đặt lúc ${vnTime(new Date(baseline.created_at))}`
-        : Number.isFinite(row?.turbidityReference) ? `Đang dùng mốc thử ${row.turbidityReference.toFixed(0)} mV` : 'Chưa đặt mốc nước sạch';
-    }
-    // Connection is independent of calibration and threshold warnings.
-    badge.textContent = sensorConnectionBadge(display.kind);
-    badge.className = `status-badge status-badge--${display.kind === 'live' ? 'normal' : 'neutral'}`;
-    badge.title = metric === 'clarity' ? 'Chỉ số độ trong tương đối, chưa hiệu chuẩn NTU.'
-      : metric === 'ph' && displayMetric === 'phVoltage' ? 'Đã nhận tín hiệu điện áp, chưa hiệu chuẩn pH.' : '';
-    if (display.kind !== 'live') card.dataset.status = 'neutral';
+    const reason = $('[data-missing-reason]', card);
+    if (reason) reason.hidden = true;
+    const updateTime = row?.time ? vnTime(row.time) : null;
+    if (status.label === 'Mất kết nối') trend.textContent = updateTime ? `Giá trị cuối · cập nhật ${updateTime}` : 'Chưa nhận được dữ liệu';
+    else if (status.label === 'Lỗi cảm biến') trend.textContent = `Không nhận được số đo hợp lệ${state.latest?.time ? ` · cập nhật ${vnTime(state.latest.time)}` : ''}`;
+    else if (status.label === 'Chưa hiệu chỉnh') trend.textContent = metric === 'clarity' ? 'Chưa hiệu chỉnh ·' : `Chưa có số pH${updateTime ? ` · cập nhật ${updateTime}` : ''}`;
+    else if (metric === 'temperature') {
+      const { tempMin, tempMax } = getThresholds();
+      trend.textContent = `${value < tempMin || value > tempMax ? 'Ngoài' : 'Trong'} khoảng ${number(tempMin)}–${number(tempMax)} °C · cập nhật ${updateTime}`;
+    } else if (metric === 'ph') {
+      const { phMin, phMax } = getThresholds();
+      trend.textContent = `${value < phMin || value > phMax ? 'Ngoài' : 'Trong'} khoảng ${number(phMin)}–${number(phMax)} · cập nhật ${updateTime}`;
+    } else trend.textContent = `cập nhật ${updateTime}`;
+
+    const valueElement = $('[data-value]', card);
+    if (status.label === 'Lỗi cảm biến') {
+      valueElement.textContent = '--';
+      if (metric === 'clarity') $('.kpi-card__value small', card).textContent = '';
+      if (metric === 'ph') $('[data-ph-unit]', card).textContent = '';
+      const calibrationLink = $('[data-calibrate-clarity]', card);
+      if (calibrationLink) calibrationLink.hidden = true;
+    } else if (metric === 'clarity') {
+      const label = { clear: 'Trong', slight: 'Hơi đục', cloudy: 'Đục' }[row?.clarityState] ?? 'Độ trong';
+      valueElement.textContent = calibrated && Number.isFinite(value) ? label : Number.isFinite(value) ? `~ ${label}` : '--';
+      valueElement.dataset.clarity = row?.clarityState ?? 'unknown';
+      $('.kpi-card__value small', card).textContent = calibrated && Number.isFinite(value) ? `${value.toFixed(0)}%` : '';
+      $('[data-calibrate-clarity]', card).hidden = calibrated;
+    } else if (metric === 'ph' && !calibrated) {
+      valueElement.textContent = '--';
+      $('[data-ph-unit]', card).textContent = '';
+    } else valueElement.textContent = Number.isFinite(value) ? value.toFixed(config.decimals).replace('.', ',') : '--';
+    drawSparkline($('.sparkline', card), state.data.slice(-22).map(item => item[displayMetric]), config.color);
   });
 
 }
@@ -434,40 +399,14 @@ const openAlerts = () => { renderAlerts($('#all-alerts-content'), true); $('#all
 listen($('#alerts-toggle'), 'click', openAlerts);
 listen($('#all-alerts-button'), 'click', openAlerts);
 listen($('#chart-settings'), 'click', () => $('#open-settings').click());
-const clarityCard = $('#turbidity-card');
-// Every card uses the same icon / title / badge header.
-$$('.kpi-grid > .kpi-card', dashboardRoot).forEach(card => {
-  $('.kpi-card__head', card).insertBefore($('.kpi-card__label', card), $('.status-badge', card));
-});
-const clarityBadge = $('.status-badge', clarityCard);
-clarityBadge.setAttribute('role', 'button'); clarityBadge.tabIndex = 0;
-clarityBadge.setAttribute('aria-describedby', 'clarity-tooltip');
-const showClarityTip = show => {
-  const tip = $('#clarity-tooltip');
-  tip.style.top = `${clarityBadge.offsetTop + clarityBadge.offsetHeight + 8}px`;
-  tip.hidden = !show; clarityBadge.setAttribute('aria-expanded', String(show));
-};
-listen(clarityBadge, 'mouseenter', () => showClarityTip(true));
-listen(clarityBadge, 'mouseleave', () => showClarityTip(false));
-listen(clarityBadge, 'focus', () => showClarityTip(true));
-listen(clarityBadge, 'blur', () => showClarityTip(false));
-listen(clarityBadge, 'click', () => showClarityTip(true));
-listen(clarityBadge, 'keydown', event => {
-  if (event.key === 'Escape') showClarityTip(false);
-  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showClarityTip($('#clarity-tooltip').hidden); }
-});
-listen($('#clarity-details-toggle'), 'click', event => {
-  const open = event.currentTarget.getAttribute('aria-expanded') !== 'true';
-  event.currentTarget.setAttribute('aria-expanded', String(open)); $('#clarity-details').hidden = !open;
-});
-listen($('#set-clean-reference'), 'click', () => {
+const openBaselineConfirmation = () => {
   const confirmation = $('#clarity-confirm');
   // Keep the confirmation inside the active modal so its controls stay accessible.
   ($('#settings-drawer').open ? $('#settings-drawer') : dashboardRoot).append(confirmation);
   $('#clarity-confirm-error').hidden = true;
   $('#clarity-confirm-error').textContent = '';
   $('#clarity-confirm-time').textContent = vnTime(new Date()); confirmation.showModal();
-});
+};
 listen($('#clarity-cancel'), 'click', () => $('#clarity-confirm').close());
 listen($('#clarity-confirm'), 'cancel', event => { if (state.baselineSaving) event.preventDefault(); });
 listen($('#clarity-save'), 'click', async () => {
@@ -581,8 +520,9 @@ const settingsDrawer = mountSettingsDrawer(root, {
   onPreview: values => { state.previewConfig = values; updateChart(); updateKpis(); },
   onBusy: busy => { state.saving = busy; $('#device-select').disabled = busy || state.baselineSaving; },
   onSaved: async () => { await refreshData(); },
-  onBaseline: () => $('#set-clean-reference').click(),
+  onBaseline: openBaselineConfirmation,
 });
+listen($('[data-calibrate-clarity]'), 'click', () => settingsDrawer.openClarity());
 settingsDrawer.accept(null, state.deviceId);
 renderAll(); refreshData();
 const pollTimer = setInterval(() => { if (!document.hidden && realtimeLabel() !== 'Live') refreshData(true); }, 5000);
