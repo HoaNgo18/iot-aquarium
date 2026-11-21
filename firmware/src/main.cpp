@@ -7,6 +7,7 @@
 #include <mqtt_client.h>
 #include <aquarium_core.h>
 #include "mqtt_transport.h"
+#include "mqtt_ca_cloudflare.h"
 #include "mqtt_ca.h"
 
 #if defined(AQUARIUM_WSS_BUILD_TEST)
@@ -124,8 +125,9 @@ void startMqtt() {
         case config::MqttTransport::Wss:
             options.transport = MQTT_TRANSPORT_OVER_WSS;
             options.path = "/";
-            // The full ESP-IDF bundle follows Cloudflare Universal SSL CA changes.
-            options.crt_bundle_attach = arduino_esp_crt_bundle_attach;
+            // Arduino-ESP32 2.0.x ships no ESP-IDF CA bundle, so trust the roots that
+            // Cloudflare Universal SSL may use (see mqtt_ca_cloudflare.h).
+            options.cert_pem = MQTT_CLOUDFLARE_CA_PEM;
             break;
         case config::MqttTransport::Tcp:
         default:

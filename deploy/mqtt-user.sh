@@ -19,12 +19,15 @@ fi
 
 mkdir -p "$secret_dir"
 touch "$password_file"
-chmod 600 "$password_file"
 
 docker run --rm --user "$(id -u):$(id -g)" \
   -v "$secret_dir:/mosquitto/config" \
   eclipse-mosquitto:2.0.22 \
   mosquitto_passwd -b /mosquitto/config/passwd "$username" "$password"
+
+# Mosquitto runs as uid 1883 inside the container and must read this file.
+# It only holds salted hashes, so world-readable is acceptable on a single-user host.
+chmod 644 "$password_file"
 
 build_compose_command "$repo_dir"
 if "${COMPOSE_CMD[@]}" ps --status running --services 2>/dev/null | grep -qx mqtt; then
