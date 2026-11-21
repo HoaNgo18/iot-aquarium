@@ -41,6 +41,7 @@ data/
 output/
 outputs/
 backups/
+.deploy.lock
 
 # Production-generated secrets and certificates
 infrastructure/mosquitto/secrets/

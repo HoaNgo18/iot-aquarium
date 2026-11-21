@@ -130,6 +130,106 @@ openssl s_client -connect mqtt.dreamer02.id.vn:443 \
 | Phụ thuộc | Nhà cung cấp VPS | Điện, mạng nhà, máy chủ vật lý |
 | CGNAT | Không liên quan | Vẫn hoạt động |
 
+## Cập nhật tự động (CI/CD)
+
+Luồng production dùng GitHub Actions để kiểm tra trên máy GitHub, sau đó chỉ giao
+việc triển khai đã được duyệt cho runner đặt trên server nhà:
+
+```text
+push main
+   │
+   ├── CI trên ubuntu-latest
+   │     ├── backend tests
+   │     ├── frontend tests + build
+   │     ├── 6 firmware builds (fake/sensors × TCP/TLS/WSS)
+   │     └── Compose + kiểm tra bảo mật workflow
+   │
+   └── CI thành công
+          └── self-hosted runner [linux, aquasense]
+                 └── deploy/update.sh
+                        ├── khóa → fast-forward → backup DB
+                        ├── build/up → chờ healthy → /health
+                        └── lỗi: quay mã ứng dụng về commit trước
+```
+
+### 1. Cài runner trên server nhà
+
+Đăng nhập GitHub bằng chủ repository, vào **Settings → Actions → Runners → New
+self-hosted runner**, chọn **Linux / x64**. Trên server, đăng nhập bằng user
+`hoango`, tạo `~/actions-runner`, rồi chạy đúng các lệnh tải và giải nén GitHub
+hiển thị. Token cấu hình chỉ dùng một lần, không lưu vào repository.
+
+Trong thư mục `~/actions-runner`, cấu hình và cài service:
+
+```bash
+./config.sh --url https://github.com/HoaNgo18/iot-aquarium \
+  --token TOKEN_MOT_LAN_TU_GITHUB \
+  --labels aquasense \
+  --name aquasense-home
+sudo ./svc.sh install hoango
+sudo ./svc.sh start
+sudo ./svc.sh status
+```
+
+Runner chạy bằng `hoango`; user này phải đọc được `/home/hoango/aquasense` và đã
+thuộc group `docker`. Thành viên group `docker` có quyền thực tế tương đương
+`root`. Đây là rủi ro được chấp nhận cho server một người dùng; không cài runner
+cho repository không tin cậy và không dùng server này làm máy cá nhân đa người.
+
+### 2. Thiết lập bảo mật GitHub bắt buộc
+
+1. **Settings → Actions → General → Fork pull request workflows:** chọn **Require
+   approval for all external contributors**.
+2. Tạo Ruleset/bảo vệ nhánh `main`: yêu cầu CI đạt trước khi merge, cấm
+   force-push và cấm xóa nhánh.
+3. **Settings → Environments → production → Deployment branches and tags:** chỉ
+   cho phép nhánh `main`. Có thể thêm required reviewer nếu muốn duyệt thủ công.
+4. Không thêm token runner, `.env.prod`, file Mosquitto `passwd` hay mật khẩu vào
+   GitHub Secrets/log. Các bí mật production chỉ nằm trên server.
+
+Workflow trên self-hosted runner chỉ là `.github/workflows/deploy.yml`; nó không
+được kích hoạt bởi `pull_request`, `pull_request_target`, `issue_comment` hoặc
+nhánh khác `main`. CI chạy mã PR hoàn toàn trên `ubuntu-latest` của GitHub.
+`scripts/check-workflow-security.py` sẽ làm CI thất bại nếu quy tắc này bị phá.
+
+### 3. Luồng cập nhật
+
+Mỗi lần push `main`, workflow **CI** chạy bốn nhóm kiểm tra song song. Chỉ khi CI
+thành công do sự kiện `push` trên `main`, workflow **Deploy production** mới gọi
+runner `aquasense-home`. Runner không checkout đè thư mục production mà chạy:
+
+```bash
+DEPLOY_DIR=/home/hoango/aquasense bash /home/hoango/aquasense/deploy/update.sh
+```
+
+Script từ chối chạy nếu file được Git theo dõi có thay đổi chưa commit, chống hai
+lượt deploy song song bằng `flock`, chỉ fast-forward từ `origin/main`, tạo backup
+PostgreSQL, build Compose và đợi service healthy tối đa 180 giây. Sau đó workflow
+kiểm tra thêm `https://app.dreamer02.id.vn/health`; lỗi mạng ngoài chỉ tạo cảnh
+báo vì health nội bộ đã được kiểm tra bắt buộc.
+
+Xem tiến trình và log tại tab **Actions** của repository. Có thể chạy tay workflow
+Deploy production nhưng job chỉ chấp nhận ref `main`.
+
+### 4. Cập nhật tay, rollback và khôi phục DB
+
+Tại server có thể dùng cùng script với CD:
+
+```bash
+cd /home/hoango/aquasense
+bash ./deploy/update.sh
+```
+
+Nếu build, container health hoặc health frontend thất bại, script tự đưa **mã ứng
+dụng** về commit trước bằng `git reset --keep`, build lại bản cũ và in 100 dòng
+log gần nhất. File không được Git theo dõi như `.env.prod`, `passwd` và backup
+không bị xóa.
+
+Rollback mã nguồn không tự đảo Alembic migration. Mỗi lượt deploy đã tạo một file
+`backups/aquasense-*.sql.gz`; nếu migration không tương thích, dừng backend và
+khôi phục đúng bản backup theo mục **Sao lưu và khôi phục PostgreSQL** bên dưới.
+Nên thực hiện trong cửa sổ bảo trì vì thao tác khôi phục ghi đè trạng thái DB.
+
 ## VPS công khai qua Caddy
 
 ## 1. Chuẩn bị VPS và tên miền

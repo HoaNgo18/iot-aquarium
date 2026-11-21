@@ -1,0 +1,50 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: [self-hosted, linux, aquasense]
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - name: Update production stack
+        env:
+          DEPLOY_DIR: /home/hoango/aquasense
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          cd "$DEPLOY_DIR"
+          bash ./deploy/update.sh
+          deployed_sha="$(git rev-parse HEAD)"
+          if [ "$deployed_sha" = "$TARGET_SHA" ]; then
+            echo "Deployed requested commit: $deployed_sha"
+          elif git merge-base --is-ancestor "$TARGET_SHA" "$deployed_sha"; then
+            echo "Main advanced during deployment; deployed newer commit $deployed_sha (requested $TARGET_SHA)."
+          else
+            echo "Deployed commit $deployed_sha does not contain requested commit $TARGET_SHA." >&2
+            exit 1
+          fi
+      - name: Check public health
+        run: |
+          if ! curl --fail --silent --show-error --max-time 20 https://app.dreamer02.id.vn/health; then
+            echo "::warning::Production deployed, but the external Cloudflare health check failed. Check tunnel/network status."
+          fi

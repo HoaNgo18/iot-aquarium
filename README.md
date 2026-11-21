@@ -1,5 +1,7 @@
 # IoT Aquarium
 
+[![CI](https://github.com/HoaNgo18/iot-aquarium/actions/workflows/ci.yml/badge.svg)](https://github.com/HoaNgo18/iot-aquarium/actions/workflows/ci.yml)
+
 Hệ thống theo dõi nhiệt độ, pH và độ đục tương đối của nước trong bể cá. ESP32 gửi dữ liệu qua MQTT về server; giao diện web hiển thị số đo, lịch sử và cảnh báo khi vượt ngưỡng cấu hình.
 
 ## Chức năng
